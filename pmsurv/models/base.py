@@ -1,22 +1,24 @@
 # Adaptet from pymc-lean: https://github.com/pymc-learn/pymc-learn/blob/master/pmlearn/base.py
 from sklearn.base import BaseEstimator
 import pymc as pm
-
+import arviz as az
+import yaml
 
 class BayesianModel(BaseEstimator):
     """
     Bayesian model base class
     """
+
     def __init__(self):
         self.cached_model = None
         self.num_pred = None
-        self.summary = None
         self.trace = None
+        self.params = {}
 
     def create_model(self):
         raise NotImplementedError
 
-    def _inference(self, inference_type='advi', inference_args=None, num_advi_sample_draws=10000):
+    def _inference(self, inference_args=None):
         """
         Calls internal methods for two types of inferences.
         Raises an error if the inference_type is not supported.
@@ -53,8 +55,8 @@ class BayesianModel(BaseEstimator):
                 nuts_kwargs = inference_args.pop('nuts_kwargs')
             else:
                 nuts_kwargs = {}
-            step = pm.NUTS(**nuts_kwargs)
-            self.trace = pm.sample(step=step, **inference_args, random_seed=0)
+            # step = pm.NUTS(**nuts_kwargs)
+            self.trace = pm.sample(**inference_args, random_seed=0)
 
         # self.summary = pm.summary(self.trace)
 
@@ -80,61 +82,60 @@ class BayesianModel(BaseEstimator):
         }
         return inference_args
 
-    def fit(self):
+    def fit(self, X, y, **kwargs):
         raise NotImplementedError
 
-    def predict(self):
+    def predict(self, X, **kwargs):
         raise NotImplementedError
 
     def score(self):
         raise NotImplementedError
 
-    #
-    # def save(self, file_prefix, custom_params=None):
-    #     """
-    #     Saves the trace and custom params to files with the given file_prefix.
-    #
-    #     Parameters
-    #     ----------
-    #     file_prefix : str
-    #         path and prefix used to identify where to save the trace for this model,
-    #         e.g. given file_prefix = 'path/to/file/'
-    #         This will attempt to save to 'path/to/file/trace.pickle'.
-    #
-    #     custom_params : dict (defaults to None)
-    #         Custom parameters to save
-    #     """
-    #     fileObject = open(file_prefix + 'trace.pickle', 'wb')
-    #     joblib.dump(self.trace, fileObject)
-    #     fileObject.close()
-    #
-    #     if custom_params:
-    #         fileObject = open(file_prefix + 'params.pickle', 'wb')
-    #         joblib.dump(custom_params, fileObject)
-    #         fileObject.close()
-    #
-    # def load(self, file_prefix, load_custom_params=False):
-    #     """
-    #     Loads a saved version of the trace, and custom param files with the given file_prefix.
-    #
-    #     Parameters
-    #     ----------
-    #     file_prefix : str
-    #         path and prefix used to identify where to load the saved trace for this model,
-    #         e.g. given file_prefix = 'path/to/file/'
-    #         This will attempt to load 'path/to/file/trace.pickle'.
-    #
-    #     load_custom_params : bool (defaults to False)
-    #         flag to indicate whether custom parameters should be loaded
-    #
-    #     Returns
-    #     ----------
-    #     custom_params : Dictionary of custom parameters
-    #     """
-    #     self.trace = joblib.load(file_prefix + 'trace.pickle')
-    #
-    #     custom_params = None
-    #     if load_custom_params:
-    #         custom_params = joblib.load(file_prefix + 'params.pickle')
-    #
-    #     return custom_params
+    def save(self, file, custom_params=None):
+        """
+        Saves the trace and custom params to files with the given file_prefix.
+
+        Parameters
+        ----------
+        file : str
+            path and prefix used to identify where to save the trace for this model,
+            e.g. given file_prefix = 'path/to/file/'
+            This will attempt to save to 'path/to/file/trace.pickle'.
+
+        custom_params : dict (defaults to None)
+            Custom parameters to save
+        """
+        trace_file = f"{file}.netcdf"
+        az.to_netcdf(self.trace, trace_file)
+
+        self.params['custom_params'] = custom_params
+        self.params['trace_file'] = trace_file
+        with open(file, 'w') as f:
+            yaml.dump(self.params, f)
+
+
+    def load(self, file):
+        """
+        Loads a saved version of the trace, and custom param files with the given file_prefix.
+
+        Parameters
+        ----------
+        file_prefix : str
+            path and prefix used to identify where to load the saved trace for this model,
+            e.g. given file_prefix = 'path/to/file/'
+            This will attempt to load 'path/to/file/trace.pickle'.
+
+        load_custom_params : bool (defaults to False)
+            flag to indicate whether custom parameters should be loaded
+
+        Returns
+        ----------
+        custom_params : Dictionary of custom parameters
+        """
+
+        with open(file, 'r') as f:
+            self.params = yaml.safe_load(f)
+
+        self.trace = az.from_netcdf(self.params['trace_file'])
+        custom_params = self.params['custom_params']
+        return custom_params
