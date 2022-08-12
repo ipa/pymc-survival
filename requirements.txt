@@ -5,3 +5,4 @@ pymc>=4.0.0
 scipy>=1.7.0
 scikit-learn>=1.0.0
 lifelines>=0.27.0
+pyyaml>=6.0
