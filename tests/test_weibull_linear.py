@@ -104,7 +104,7 @@ class TestWeibullLinear(unittest.TestCase):
         wb_model = WeibullModelLinear()
         wb_model.fit(X, y, inference_args=fit_args, column_names=included_features)
 
-        c_index = wb_model.score(X, y)
+        c_index = wb_model.score(X, y) 
         print(f"c-index = {c_index}")
         self.assertGreater(c_index, 0.725)
 
