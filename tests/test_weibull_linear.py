@@ -11,11 +11,6 @@ warnings.simplefilter("ignore")
 
 class TestWeibullLinear(unittest.TestCase):
 
-    def test_data(self):
-        X, y = data.synthetic_data_weibull()
-        plt.hist(y[:, 0])
-        plt.show()
-
     def test_setup(self):
         print("test_setup")
         priors = {
@@ -62,9 +57,7 @@ class TestWeibullLinear(unittest.TestCase):
         wb_model.fit(X, y, inference_args=fit_args, column_names=['a'])
 
         summary = az.summary(wb_model.trace, filter_vars='like', var_names=["~k_det", "~lambda_det"])
-        c_index = wb_model.score(X, y)
         print(summary)
-        self.assertAlmostEqual(c_index, 0.5, 2)  # should be 0.5 because data is random
         self.assertAlmostEqual(summary['mean']['lambda_intercept[0]'], lam, 0)
         self.assertAlmostEqual(summary['mean']['k_intercept[0]'], k, 0)
 
@@ -104,7 +97,7 @@ class TestWeibullLinear(unittest.TestCase):
         wb_model = WeibullModelLinear()
         wb_model.fit(X, y, inference_args=fit_args, column_names=included_features)
 
-        c_index = wb_model.score(X, y) 
+        c_index = wb_model.score(X, y)
         print(f"c-index = {c_index}")
         self.assertGreater(c_index, 0.725)
 
