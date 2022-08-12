@@ -47,9 +47,9 @@ class TestWeibullLinear(unittest.TestCase):
 
     def test_fit_intercept_only(self):
         print("test_fit_intercept_only")
-        lam = 5
+        lam = 1.5
         k = 1
-        X, y = data.synthetic_data_intercept_only(lam=5, k=1)
+        X, y = data.synthetic_data_intercept_only(lam=lam, k=k)
         y[:, 1] = 1 - y[:, 1]  # inverse
         print(X.shape, y.shape)
         fit_args = {'draws': 1000, 'tune': 500, 'chains': 2, 'cores': 1, 'return_inferencedata': True}
