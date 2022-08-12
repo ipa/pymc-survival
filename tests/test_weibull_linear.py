@@ -1,17 +1,20 @@
 import warnings
-
-import matplotlib.pyplot as plt
-
-warnings.simplefilter("ignore")
 import os
 import tempfile
 import unittest
-
+import arviz as az
+import matplotlib.pyplot as plt
 from pmsurv.models.weibull_linear import WeibullModelLinear
-import pmsurv.utils
-from data import synthetic_data_random
+import data
+
+warnings.simplefilter("ignore")
 
 class TestWeibullLinear(unittest.TestCase):
+
+    def test_data(self):
+        X, y = data.synthetic_data_weibull()
+        plt.hist(y[:, 0])
+        plt.show()
 
     def test_setup(self):
         print("test_setup")
@@ -28,99 +31,83 @@ class TestWeibullLinear(unittest.TestCase):
         self.assertIsNotNone(wb_model)
 
     def test_fit(self):
-        print("test_fit_1")
-        included_features = ['a', 'b', 'c']
-        X, y = synthetic_data_random()
+        print("test_fit")
+        included_features = ['a']
+        lam_ctrl = 1
+        lam_trt = 2.5
+        k = 1
+        X, y = data.synthetic_data_weibull(lam_ctrl=lam_ctrl, lam_trt=lam_trt, k=k)
+        y[:, 1] = 1 - y[:, 1]  # inverse
         print(X.shape, y.shape)
-        fit_args = {'draws': 100, 'tune': 100, 'chains': 1, 'cores': 1, 'return_inferencedata': True}
+        fit_args = {'draws': 1000, 'tune': 500, 'target_accept': 0.85, 'chains': 2, 'cores': 1,
+                    'return_inferencedata': True}
         wb_model = WeibullModelLinear()
         wb_model.fit(X, y, inference_args=fit_args, column_names=included_features)
 
+        summary = az.summary(wb_model.trace, filter_vars='like', var_names=["~k_det", "~lambda_det"])
+        print(summary)
+        self.assertAlmostEqual(summary['mean']['lambda_intercept[0]'], lam_ctrl, 0)
+        self.assertAlmostEqual(summary['mean']['lambda_coefs[0]'], lam_trt - lam_ctrl, 0)
+        self.assertAlmostEqual(summary['mean']['k_intercept[0]'], k, 0)
 
-    # def test_save(self):
-    #     print("test_save")
-    #     included_features = ['a', 'b', 'c']
-    #     X, y = synthetic_data_random()
-    #     print(X.shape, y.shape)
-    #     fit_args = {'draws': 100, 'tune': 100, 'chains': 1, 'cores': 1, 'return_inferencedata': True}
-    #     wb_model = WeibullModelLinear()
-    #     wb_model.fit(X, y, inference_args=fit_args, column_names=included_features)
-    #     wb_model.save(os.path.join(tempfile.gettempdir(), 'test'))
-    #
-    #     wb_model2 = WeibullModelLinear()
-    #     wb_model2.load(os.path.join(tempfile.gettempdir(), 'test'))
-    #
-    # def test_save_and_load(self):
-    #     print("test_save")
-    #     included_features = ['a', 'b', 'c']
-    #     X, y = synthetic_data_random()
-    #     print(X.shape, y.shape)
-    #     fit_args = {'draws': 100, 'tune': 100, 'chains': 1, 'cores': 1, 'return_inferencedata': True}
-    #     wb_model = WeibullModelLinear()
-    #     wb_model.fit(X, y, inference_args=fit_args, column_names=included_features)
-    #     wb_model.save(os.path.join(tempfile.gettempdir(), 'test'))
-    #
-    #     wb_model2 = WeibullModelLinear()
-    #     wb_model2.load(os.path.join(tempfile.gettempdir(), 'test'))
-    #
-    #     X_test = X[1:20, :]
-    #     y_test = y[1:20, :]
-    #     c_index = wb_model2.score(X_test, y_test)
-    #     print(f"c-index = {c_index}")
-    #     self.assertGreater(c_index, 0.99)
+    def test_fit_intercept_only(self):
+        print("test_fit_intercept_only")
+        lam = 5
+        k = 1
+        X, y = data.synthetic_data_intercept_only(lam=5, k=1)
+        y[:, 1] = 1 - y[:, 1]  # inverse
+        print(X.shape, y.shape)
+        fit_args = {'draws': 1000, 'tune': 500, 'chains': 2, 'cores': 1, 'return_inferencedata': True}
+        wb_model = WeibullModelLinear()
+        wb_model.fit(X, y, inference_args=fit_args, column_names=['a'])
 
+        summary = az.summary(wb_model.trace, filter_vars='like', var_names=["~k_det", "~lambda_det"])
+        c_index = wb_model.score(X, y)
+        print(summary)
+        self.assertAlmostEqual(c_index, 0.5, 2)  # should be 0.5 because data is random
+        self.assertAlmostEqual(summary['mean']['lambda_intercept[0]'], lam, 0)
+        self.assertAlmostEqual(summary['mean']['k_intercept[0]'], k, 0)
 
-    # def test_score(self):
-    #     print("test_fit_1")
-    #     included_features = ['a', 'b', 'c']
-    #     X, y = synthetic_data_random(n_samples=500)
-    #     print(X.shape, y.shape)
-    #     fit_args = {'draws': 1000, 'tune': 1000, 'chains': 2, 'cores': 1, 'return_inferencedata': True, 'progressbar': True}
-    #     wb_model = WeibullModelLinear()
-    #     wb_model.fit(X, y, inference_type='nuts', inference_args=fit_args, column_names=included_features)
-    #
-    #     X_test = X[1:20, :]
-    #     y_test = y[1:20, :]
-    #     c_index = wb_model.score(X_test, y_test)
-    #     print(f"c-index = {c_index}")
-    #     self.assertGreater(c_index, 0.99)
+    def test_save_and_load(self):
+        print("test_save_and_load")
+        included_features = ['a', 'b', 'c']
+        X, y = data.synthetic_data_random()
+        print(X.shape, y.shape)
+        fit_args = {'draws': 2000, 'tune': 1000, 'chains': 2, 'cores': 1, 'return_inferencedata': True}
+        wb_model = WeibullModelLinear()
+        wb_model.fit(X, y, inference_args=fit_args, column_names=included_features)
 
-    # def test_score_advi(self):
-    #     print("test_fit_1")
-    #     included_features = ['a', 'b', 'c']
-    #     X, y = synthetic_data_random(n_samples=500)
-    #     print(X.shape, y.shape)
-    #     fit_args = {'n': 20000, 'draws': 1000, 'progressbar': True}
-    #     wb_model = WeibullModelLinear()
-    #     wb_model.fit(X, y, inference_type='advi', inference_args=fit_args, column_names=included_features)
-    #
-    #     X_test = X[1:20, :]
-    #     y_test = y[1:20, :]
-    #     c_index = wb_model.score(X_test, y_test)
-    #     print(f"c-index = {c_index}")
-    #     self.assertGreater(c_index, 0.99)
-    #
-    # def test_predict(self):
-    #     print("test_predict")
-    #     included_features = ['a', 'b', 'c']
-    #     X, y = synthetic_data_random(n_samples=500)
-    #     print(X.shape, y.shape)
-    #     fit_args = {'draws': 1000, 'tune': 1000, 'chains': 2, 'cores': 1, 'return_inferencedata': True, 'progressbar': True}
-    #     wb_model = WeibullModelLinear()
-    #     wb_model.fit(X, y, inference_args=fit_args, column_names=included_features)
-    #
-    #     X_test = X[1:20, :]
-    #     print(X_test.shape)
-    #     mu, lower, upper = wb_model.predict(X_test, resolution=10)
-    #
-    #     t_plot = pdeepsurv.utils.get_time_axis(0, wb_model.max_time, 10)
-    #     print(mu.shape, t_plot.shape)
-    #
-    #     # import matplotlib.pyplot as plt
-    #     # print(t_plot.shape, mu.shape, lower.shape, upper.shape)
-    #     # plt.plot(t_plot, mu[1, :])
-    #     # plt.show()
-    #     self.assertEqual(19, mu.shape[0])
+        summary_1 = az.summary(wb_model.trace, filter_vars='like', var_names=["~k_det", "~lambda_det"])
+
+        file = os.path.join(tempfile.gettempdir(), 'test.yaml')
+        print('saving to ', file)
+        wb_model.save(file)
+
+        wb_model2 = WeibullModelLinear()
+        wb_model2.load(file)
+
+        summary_2 = az.summary(wb_model2.trace, filter_vars='like', var_names=["~k_det", "~lambda_det"])
+
+        self.assertAlmostEqual(summary_1['mean']['lambda_intercept[0]'], summary_2['mean']['lambda_intercept[0]'])
+        self.assertAlmostEqual(summary_1['mean']['lambda_coefs[0]'], summary_2['mean']['lambda_coefs[0]'])
+        self.assertAlmostEqual(summary_1['mean']['lambda_coefs[1]'], summary_2['mean']['lambda_coefs[1]'])
+        self.assertAlmostEqual(summary_1['mean']['lambda_coefs[2]'], summary_2['mean']['lambda_coefs[2]'])
+
+    def test_score(self):
+        print("test_fit_1")
+        included_features = ['a']
+        X, y = data.synthetic_data_weibull(lam_ctrl=1, lam_trt=2.5, k=1)
+        y[:, 1] = 1 - y[:, 1]  # inverse
+        print(X.shape, y.shape)
+        fit_args = {'draws': 1000, 'tune': 1000, 'chains': 2, 'cores': 1, 'return_inferencedata': True,
+                    'progressbar': True}
+        wb_model = WeibullModelLinear()
+        wb_model.fit(X, y, inference_args=fit_args, column_names=included_features)
+
+        c_index = wb_model.score(X, y)
+        print(f"c-index = {c_index}")
+        self.assertGreater(c_index, 0.725)
+
 
 if __name__ == '__main__':
     unittest.main()

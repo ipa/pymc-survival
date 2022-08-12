@@ -1,6 +1,6 @@
 # import warnings
 # warnings.simplefilter("ignore")
-# import lifelines
+import lifelines
 import scipy.stats as st
 import numpy as np
 from numpy.random import default_rng
@@ -60,13 +60,12 @@ class WeibullModelLinear(BayesianModel):
         model = pm.Model()
         with model:
             if X is None:
-                pass
                 print("create cached with empty data")
                 model_input = pm.MutableData("model_input", np.zeros([self.num_training_samples, self.num_pred]))
                 time_censor_ = pm.MutableData("time_censor", np.zeros(np.ceil(self.num_training_samples / 2).astype(int)))
                 time_uncensor_ = pm.MutableData("time_uncensor", np.zeros(np.floor(self.num_training_samples / 2).astype(int)))
                 censor_ = pm.MutableData("censor", default_rng(seed=0).choice([1, 0], size=(self.num_training_samples),
-                                                                       p=[0.2, 0.8]).astype(np.int32))
+                                                                       p=[0.5, 0.5]).astype(np.int32))
             else:
                 print("create cached with real data")
                 model_input = pm.MutableData("model_input", X)
@@ -95,8 +94,10 @@ class WeibullModelLinear(BayesianModel):
             else:
                 k_coefs = 0.0 #pm.Constant("k_coefs", c=0)
 
-            lambda_ = pm.Deterministic("lambda_", pm.math.exp(lambda_intercept + (lambda_coefs * model_input).sum(axis=1)))
-            k_ = pm.Deterministic("k_", pm.math.exp(k_intercept + (k_coefs * model_input).sum(axis=1)))
+            lambda_ = pm.Deterministic("lambda_det", pm.math.exp(lambda_intercept + (lambda_coefs * model_input).sum(axis=1)))
+            k_ = pm.Deterministic("k_det", pm.math.exp(k_intercept + (k_coefs * model_input).sum(axis=1)))
+
+            print(k_.shape.eval(), lambda_.shape.eval(), time_censor_.shape.eval(), time_uncensor_.shape.eval())
 
             censor_ = at.eq(censor_, 1)
             y = pm.Weibull("y", alpha=k_[~censor_], beta=lambda_[~censor_],
@@ -110,13 +111,12 @@ class WeibullModelLinear(BayesianModel):
 
         return model
 
-    def fit(self, X, y, inference_type='nuts', inference_args=None, priors=None, column_names=None):
+    def fit(self, X, y, inference_args=None, priors=None, column_names=None):
         self.num_training_samples, self.num_pred = X.shape
         self.column_names = column_names
         self.n_columns = len(column_names)
         self.inference_args = inference_args if inference_args is not None else WeibullModelLinear._get_default_inference_args()
 
-        self.inference_type = inference_type
         self.max_time = int(np.max(y))
 
         if y.ndim != 1:
@@ -124,7 +124,7 @@ class WeibullModelLinear(BayesianModel):
             y = np.squeeze(y)
 
         if not inference_args:
-            inference_args = self._set_default_inference_args()
+            inference_args = self.__set_default_inference_args()
 
         if self.cached_model is None:
             print('create from fit')
@@ -138,11 +138,11 @@ class WeibullModelLinear(BayesianModel):
                 'censor': y[:, 1].astype(np.int32)
             })
 
-        self._inference(inference_type, inference_args)
+        self._inference(inference_args)
 
         return self
 
-    def predict(self, X, return_std=True, return_curve=True, num_ppc_samples=1000, resolution=10):
+    def predict(self, X, return_std=True, num_ppc_samples=1000, resolution=10):
         if self.trace is None:
             raise PyMCModelsError('Run fit on the model before predict.')
 
@@ -160,22 +160,22 @@ class WeibullModelLinear(BayesianModel):
             })
 
         ppc = pm.sample_posterior_predictive(self.trace, model=self.cached_model, return_inferencedata=False,
-                                             random_seed=0, var_names = ['y', 'lambda_', 'k_'])
+                                             random_seed=0, var_names = ['y', 'lambda_det', 'k_det'])
         print()
 
-        t_plot = pdeepsurv.utils.get_time_axis(0, self.max_time, resolution)
+        t_plot = pmsurv.utils.get_time_axis(0, self.max_time, resolution)
 
         print(ppc.keys())
-        pp_lambda = np.mean(ppc['lambda_'], axis=0)
-        pp_k = np.mean(ppc['k_'], axis=0)
-        pp_lambda_std = np.std(ppc['lambda_'], axis=0)
-        pp_k_std = np.std(ppc['k_'], axis=0)
+        pp_lambda = np.mean(ppc['lambda_det'], axis=0)
+        pp_k = np.mean(ppc['k_det'], axis=0)
+        pp_lambda_std = np.std(ppc['lambda_det'], axis=0)
+        pp_k_std = np.std(ppc['k_det'], axis=0)
 
         t_plot_rep = np.repeat(t_plot, num_samples).reshape((len(t_plot), -1))
 
-        pp_surv_mean = 1 - st.weibull_min.cdf(t_plot_rep, pp_k, scale=pp_lambda).T
-        pp_surv_lower = 1 - st.weibull_min.cdf(t_plot_rep, pp_k - pp_k_std, scale=pp_lambda - pp_lambda_std).T
-        pp_surv_upper = 1 - st.weibull_min.cdf(t_plot_rep, pp_k + pp_k_std, scale=pp_lambda + pp_lambda_std).T
+        pp_surv_mean = 1 - st.weibull_min.cdf(t_plot_rep, c=pp_k, scale=pp_lambda).T
+        pp_surv_lower = 1 - st.weibull_min.cdf(t_plot_rep, c=pp_k - pp_k_std, scale=pp_lambda - pp_lambda_std).T
+        pp_surv_upper = 1 - st.weibull_min.cdf(t_plot_rep, c=pp_k + pp_k_std, scale=pp_lambda + pp_lambda_std).T
         pp_surv_lower = np.nan_to_num(pp_surv_lower, 0)
         pp_surv_upper = np.nan_to_num(pp_surv_upper, 1)
 
@@ -194,7 +194,6 @@ class WeibullModelLinear(BayesianModel):
             'priors': self.priors,
             'inference_args': self.inference_args,
             'max_observed_time': self.max_time,
-            'inference_type': self.inference_type,
             'num_pred': self.num_pred,
             'num_training_samples': self.num_training_samples
         }
@@ -203,9 +202,8 @@ class WeibullModelLinear(BayesianModel):
         super(WeibullModelLinear, self).save(file_prefix, custom_params)
 
     def load(self, file_prefix, **kwargs):
-        params = super(WeibullModelLinear, self).load(file_prefix, load_custom_params=True)
+        params = super(WeibullModelLinear, self).load(file_prefix)
         print('load: ', params['priors'])
-        self.inference_type = params['inference_type']
         self.num_pred = params['num_pred']
         self.num_training_samples = params['num_training_samples']
         self.column_names = params['column_names']

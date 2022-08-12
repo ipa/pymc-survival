@@ -2,7 +2,7 @@ import warnings
 warnings.simplefilter("ignore")
 import numpy as np
 from numpy.random import default_rng
-from scipy.stats import expon
+from scipy.stats import expon, weibull_min
 
 def synthetic_data_random(n_samples=100):
     coefficients = [2, 4, 6]
@@ -16,4 +16,27 @@ def synthetic_data_random(n_samples=100):
     y_time = expon.rvs(rate)
     y_event = rng.choice([1, 0], size=(n_samples, 1), p=[0.2, 0.8]).astype(np.int_)
     y = np.hstack((y_time, y_event))
+    return X, y
+
+
+def synthetic_data_weibull(lam_ctrl, lam_trt, k, n_samples=1000):
+    X = np.stack((np.zeros((int(n_samples / 2))), np.ones((int(n_samples / 2))))).flatten()
+    X = np.expand_dims(X, axis=1)
+
+    y_time_trt = weibull_min.rvs(c=np.exp(k), scale=np.exp(lam_trt), size=int(n_samples / 2)).T.flatten()
+    y_time_ctrl = weibull_min.rvs(c=np.exp(k), scale=np.exp(lam_ctrl), size=int(n_samples / 2)).T.flatten()
+    y_time = np.stack((y_time_ctrl, y_time_trt)).flatten()
+
+    y_event = y_time < 15  # rng.choice([1, 0], size=(n_samples), p=[0.5, 0.5]).astype(np.int_)
+    y = np.vstack((y_time, y_event)).T
+
+    return X, y
+
+def synthetic_data_intercept_only(lam, k, n_samples=1000):
+    rng = default_rng(seed=0)
+    X = np.zeros((n_samples, 1))
+    y_time = weibull_min.rvs(c=np.exp(k), scale=np.exp(lam), size=(n_samples)).T.flatten()
+    y_event = y_time < 10 # rng.choice([1, 0], size=(n_samples), p=[0.5, 0.5]).astype(np.int_)
+    y = np.vstack((y_time, y_event)).T
+
     return X, y
