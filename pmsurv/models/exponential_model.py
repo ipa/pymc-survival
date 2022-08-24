@@ -11,9 +11,9 @@ import pmsurv.utils
 import aesara.tensor as at
 
 
-class WeibullModelLinear(BayesianModel):
+class ExponentialModel(BayesianModel):
     def __init__(self):
-        super(WeibullModelLinear, self).__init__()
+        super(ExponentialModel, self).__init__()
         self.column_names = None
         self.max_time = None
         self.priors = None
@@ -24,16 +24,10 @@ class WeibullModelLinear(BayesianModel):
     @staticmethod
     def _get_default_priors():
         return {
-            'k_coefs': False,
-            'uncertainty': [],
             'lambda_mu': 1,
             'lambda_sd': 1,
-            'k_mu': 1,
-            'k_sd': 1,
             'lambda_coefs_mu': 0,
-            'lambda_coefs_sd': 1,
-            'k_coefs_mu': 0,
-            'k_coefs_sd': 1
+            'lambda_coefs_sd': 1
         }
 
     @staticmethod
@@ -45,7 +39,7 @@ class WeibullModelLinear(BayesianModel):
         }
 
     def __str__(self):
-        str_output = "WeibullModelTreatment \n\r"
+        str_output = "ExponentialModel \n\r"
         str_output += str(self.column_names) + "\r\n"
         str_output += str(self.priors) + "\r\n"
         str_output += str(self.fit_args) + "\r\n"
@@ -55,7 +49,7 @@ class WeibullModelLinear(BayesianModel):
         if self.priors is None:
             self.priors = priors
         if self.priors is None:
-            self.priors = WeibullModelLinear._get_default_priors()
+            self.priors = ExponentialModel._get_default_priors()
 
         model = pm.Model()
         with model:
@@ -82,42 +76,27 @@ class WeibullModelLinear(BayesianModel):
             lambda_intercept = pm.Normal("lambda_intercept",
                                          mu=self.priors['lambda_mu'], sigma=self.priors['lambda_sd'])
 
-            k_intercept = pm.Normal('k_intercept',
-                                    mu=self.priors['k_mu'], sigma=self.priors['k_sd'])
             lambda_coefs = []
             for i, cn in enumerate(self.column_names):
                 lambda_coef = pm.Normal(f'lambda_{cn}',
                                         mu=self.priors['lambda_coefs_mu'],
                                         sigma=self.priors['lambda_coefs_sd'])
                 lambda_coefs.append(model_input[:, i] * lambda_coef)
-            lam = sum(lambda_coefs)
+            lambda_det = pm.Deterministic("lambda_det", pm.math.exp(lambda_intercept + sum(lambda_coefs)))
 
-            if self.priors['k_coefs']:
-                k_coefs = []
-                for i, cn in enumerate(self.column_names):
-                    k_coef = pm.Normal(f'k_{cn}',
-                                            mu=self.priors['k_coefs_mu'],
-                                            sigma=self.priors['k_coefs_sd'])
-                    k_coefs.append(model_input[:, i] * k_coef)
-                    k = sum(k_coefs)
-            else:
-                k = (0.0 * model_input).sum(axis=1)
-
-            lambda_ = pm.Deterministic("lambda_det",
-                                       pm.math.exp(lambda_intercept + lam))
-            k_ = pm.Deterministic("k_det", pm.math.exp(k_intercept + k))
-
-            print(k_.shape.eval(), lambda_.shape.eval(), time_censor_.shape.eval(), time_uncensor_.shape.eval())
+            print(lambda_det.shape.eval(), time_censor_.shape.eval(), time_uncensor_.shape.eval())
 
             censor_ = at.eq(censor_, 1)
-            y = pm.Weibull("y", alpha=k_[~censor_], beta=lambda_[~censor_],
-                           observed=time_uncensor_)
+            y = pm.Exponential("y", at.ones_like(time_uncensor_) / lambda_det[~censor_],
+                               observed=time_uncensor_)
 
-            def weibull_lccdf(x, alpha, beta):
-                """ Log complementary cdf of Weibull distribution. """
-                return -((x / beta) ** alpha)
+            def exponential_lccdf(lam, time):
+                """ Log complementary cdf of Exponential distribution. """
+                return -(lam * time)
 
-            y_cens = pm.Potential("y_cens", weibull_lccdf(time_censor_, alpha=k_[censor_], beta=lambda_[censor_]))
+            y_cens = pm.Potential(
+                "y_cens", exponential_lccdf(at.ones_like(time_censor_) / lambda_det[censor_], time_censor_)
+            )
 
         return model
 
@@ -169,22 +148,20 @@ class WeibullModelLinear(BayesianModel):
             })
 
         ppc = pm.sample_posterior_predictive(self.trace, model=self.cached_model, return_inferencedata=False,
-                                             random_seed=0, var_names=['y', 'lambda_det', 'k_det'])
+                                             random_seed=0, var_names=['y', 'lambda_det'])
         print()
 
         t_plot = pmsurv.utils.get_time_axis(0, self.max_time, resolution)
 
         print(ppc.keys())
         pp_lambda = np.mean(ppc['lambda_det'], axis=0)
-        pp_k = np.mean(ppc['k_det'], axis=0)
         pp_lambda_std = np.std(ppc['lambda_det'], axis=0)
-        pp_k_std = np.std(ppc['k_det'], axis=0)
 
         t_plot_rep = np.repeat(t_plot, num_samples).reshape((len(t_plot), -1))
 
-        pp_surv_mean = 1 - st.weibull_min.cdf(t_plot_rep, c=pp_k, scale=pp_lambda).T
-        pp_surv_lower = 1 - st.weibull_min.cdf(t_plot_rep, c=pp_k - pp_k_std, scale=pp_lambda - pp_lambda_std).T
-        pp_surv_upper = 1 - st.weibull_min.cdf(t_plot_rep, c=pp_k + pp_k_std, scale=pp_lambda + pp_lambda_std).T
+        pp_surv_mean = st.expon.sf(t_plot_rep / pp_lambda).T
+        pp_surv_lower = st.expon.sf(t_plot_rep / (pp_lambda - pp_lambda_std)).T
+        pp_surv_upper = st.expon.sf(t_plot_rep / (pp_lambda + pp_lambda_std)).T
         pp_surv_lower = np.nan_to_num(pp_surv_lower, 0)
         pp_surv_upper = np.nan_to_num(pp_surv_upper, 1)
 
@@ -208,10 +185,10 @@ class WeibullModelLinear(BayesianModel):
         }
         print('store: ', self.priors)
 
-        super(WeibullModelLinear, self).save(file_prefix, custom_params)
+        super(ExponentialModel, self).save(file_prefix, custom_params)
 
     def load(self, file_prefix, **kwargs):
-        params = super(WeibullModelLinear, self).load(file_prefix)
+        params = super(ExponentialModel, self).load(file_prefix)
         print('load: ', params['priors'])
         self.num_pred = params['num_pred']
         self.num_training_samples = params['num_training_samples']

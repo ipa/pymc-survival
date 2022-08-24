@@ -4,6 +4,8 @@ import tempfile
 import unittest
 import arviz as az
 import matplotlib.pyplot as plt
+import pandas as pd
+
 from pmsurv.models.weibull_linear import WeibullModelLinear
 import data
 
@@ -25,6 +27,26 @@ class TestWeibullLinear(unittest.TestCase):
         wb_model = WeibullModelLinear()
         self.assertIsNotNone(wb_model)
 
+    def test_create_model(self):
+        print("test_create_model")
+        lam_ctrl = 1
+        lam_trt = 2.5
+        k = 1
+        X, y = data.synthetic_data_weibull(lam_ctrl=lam_ctrl, lam_trt=lam_trt, k=k)
+        y[:, 1] = 1 - y[:, 1]  # inverse
+
+        X = pd.DataFrame(X, columns = ['A'])
+        print(X)
+        wb_model = WeibullModelLinear()
+        fit_args = {'draws': 1000, 'tune': 500, 'target_accept': 0.85, 'chains': 2, 'cores': 1,
+                    'return_inferencedata': True}
+        wb_model.fit(X, y, inference_args=fit_args)
+
+        summary = az.summary(wb_model.trace, filter_vars='like', var_names=["~k_det", "~lambda_det"])
+        print(summary)
+
+        self.assertIsNotNone(wb_model)
+
     def test_fit(self):
         print("test_fit")
         included_features = ['a']
@@ -37,7 +59,7 @@ class TestWeibullLinear(unittest.TestCase):
         fit_args = {'draws': 1000, 'tune': 500, 'target_accept': 0.85, 'chains': 2, 'cores': 1,
                     'return_inferencedata': True}
         wb_model = WeibullModelLinear()
-        wb_model.fit(X, y, inference_args=fit_args, column_names=included_features)
+        wb_model.fit(X, y, inference_args=fit_args, column_names=['A'])
 
         summary = az.summary(wb_model.trace, filter_vars='like', var_names=["~k_det", "~lambda_det"])
         print(summary)

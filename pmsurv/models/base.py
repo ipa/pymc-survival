@@ -88,7 +88,7 @@ class BayesianModel(BaseEstimator):
     def predict(self, X, **kwargs):
         raise NotImplementedError
 
-    def score(self):
+    def score(self, X, y, **kwargs):
         raise NotImplementedError
 
     def save(self, file, custom_params=None):
