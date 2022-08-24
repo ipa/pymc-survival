@@ -7,7 +7,7 @@ import arviz as az
 
 class MyTestCase(unittest.TestCase):
     def test_weibull_linear_veteran(self):
-        data = pd.read_csv("data/veteran.csv")
+        data = pd.read_csv("tests/data/veteran.csv")
         X = data[['age']]
         X['celltype_1'] = data['celltype'] == 1
         X['celltype_2'] = data['celltype'] == 2
@@ -29,7 +29,7 @@ class MyTestCase(unittest.TestCase):
         print(c_index)
 
     def test_exponential_linear_veteran(self):
-        data = pd.read_csv("data/veteran.csv")
+        data = pd.read_csv("tests/data/veteran.csv")
         X = data[['age']]
         X['celltype_2'] = data['celltype'] == 2
         X['celltype_3'] = data['celltype'] == 3
