@@ -78,18 +78,16 @@ class TestExponentialModel(unittest.TestCase):
         summary = az.summary(wb_model.trace, filter_vars='like', var_names=["~k_det", "~lambda_det"])
         print(summary)
         self.assertAlmostEqual(summary['mean']['lambda_intercept'], lam, 0)
-        self.assertAlmostEqual(summary['mean']['k_intercept'], k, 0)
 
     def test_save_and_load(self):
         print("test_save_and_load")
-        included_features = ['a', 'b', 'c']
         X, y = data.synthetic_data_random()
         print(X.shape, y.shape)
         fit_args = {'draws': 2000, 'tune': 1000, 'chains': 2, 'cores': 1, 'return_inferencedata': True}
         wb_model = ExponentialModel()
         wb_model.fit(X, y, inference_args=fit_args)
 
-        summary_1 = az.summary(wb_model.trace, filter_vars='like', var_names=["~k_det", "~lambda_det"])
+        summary_1 = az.summary(wb_model.trace, filter_vars='like', var_names=["~lambda_det"])
 
         file = os.path.join(tempfile.gettempdir(), 'test.yaml')
         print('saving to ', file)
@@ -98,12 +96,12 @@ class TestExponentialModel(unittest.TestCase):
         wb_model2 = ExponentialModel()
         wb_model2.load(file)
 
-        summary_2 = az.summary(wb_model2.trace, filter_vars='like', var_names=["~k_det", "~lambda_det"])
+        summary_2 = az.summary(wb_model2.trace, filter_vars='like', var_names=["~lambda_det"])
 
-        self.assertAlmostEqual(summary_1['mean']['lambda_intercept[0]'], summary_2['mean']['lambda_intercept[0]'])
-        self.assertAlmostEqual(summary_1['mean']['lambda_coefs[0]'], summary_2['mean']['lambda_coefs[0]'])
-        self.assertAlmostEqual(summary_1['mean']['lambda_coefs[1]'], summary_2['mean']['lambda_coefs[1]'])
-        self.assertAlmostEqual(summary_1['mean']['lambda_coefs[2]'], summary_2['mean']['lambda_coefs[2]'])
+        self.assertAlmostEqual(summary_1['mean']['lambda_intercept'], summary_2['mean']['lambda_intercept'])
+        self.assertAlmostEqual(summary_1['mean']['lambda_coefs_A'], summary_2['mean']['lambda_coefs_A'])
+        self.assertAlmostEqual(summary_1['mean']['lambda_coefs_B'], summary_2['mean']['lambda_coefs_B'])
+        self.assertAlmostEqual(summary_1['mean']['lambda_coefs_C'], summary_2['mean']['lambda_coefs_C'])
 
     def test_score(self):
         print("test_fit_1")

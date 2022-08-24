@@ -3,17 +3,19 @@ import pandas as pd
 from pmsurv.models.weibull_linear import WeibullModelLinear
 from pmsurv.models.exponential_model import ExponentialModel
 import arviz as az
+from sklearn.preprocessing import OneHotEncoder
 
 
 class MyTestCase(unittest.TestCase):
     def test_weibull_linear_veteran(self):
         data = pd.read_csv("tests/data/veteran.csv")
-        X = data[['age']]
+        X = data[['age', 'celltype', 'trt']]
         X['celltype_1'] = data['celltype'] == 1
         X['celltype_2'] = data['celltype'] == 2
         X['celltype_3'] = data['celltype'] == 3
         X['celltype_4'] = data['celltype'] == 4
         X['trt'] = data['trt'] == 2
+
         y = data[['time', 'status']].values
         y[:, 1] = 1 - y[:, 1]  # inverse
 
