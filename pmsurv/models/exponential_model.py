@@ -102,7 +102,7 @@ class ExponentialModel(BayesianModel):
 
     def fit(self, X, y, inference_args=None, priors=None):
         self.num_training_samples, self.num_pred = X.shape
-        self.column_names = X.columns
+        self.column_names = list(X.columns.values)
         self.inference_args = inference_args if inference_args is not None else ExponentialModel._get_default_inference_args()
 
         self.max_time = int(np.max(y))

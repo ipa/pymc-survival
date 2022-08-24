@@ -6,6 +6,7 @@ import arviz as az
 
 from pmsurv.models.weibull_linear import WeibullModelLinear
 import data
+from pathlib import Path
 
 warnings.simplefilter("ignore")
 
@@ -59,9 +60,9 @@ class TestWeibullLinear(unittest.TestCase):
 
         summary = az.summary(wb_model.trace, filter_vars='like', var_names=["~k_det", "~lambda_det"])
         print(summary)
-        self.assertAlmostEqual(summary['mean']['lambda_intercept[0]'], lam_ctrl, 0)
-        self.assertAlmostEqual(summary['mean']['lambda_coefs[0]'], lam_trt - lam_ctrl, 0)
-        self.assertAlmostEqual(summary['mean']['k_intercept[0]'], k, 0)
+        self.assertAlmostEqual(summary['mean']['lambda_intercept'], lam_ctrl, 0)
+        self.assertAlmostEqual(summary['mean']['lambda_A'], lam_trt - lam_ctrl, 0)
+        self.assertAlmostEqual(summary['mean']['k_intercept'], k, 0)
 
     def test_fit_intercept_only(self):
         print("test_fit_intercept_only")
@@ -76,8 +77,8 @@ class TestWeibullLinear(unittest.TestCase):
 
         summary = az.summary(wb_model.trace, filter_vars='like', var_names=["~k_det", "~lambda_det"])
         print(summary)
-        self.assertAlmostEqual(summary['mean']['lambda_intercept[0]'], lam, 0)
-        self.assertAlmostEqual(summary['mean']['k_intercept[0]'], k, 0)
+        self.assertAlmostEqual(summary['mean']['lambda_intercept'], lam, 0)
+        self.assertAlmostEqual(summary['mean']['k_intercept'], k, 0)
 
     def test_save_and_load(self):
         print("test_save_and_load")
@@ -90,7 +91,10 @@ class TestWeibullLinear(unittest.TestCase):
 
         summary_1 = az.summary(wb_model.trace, filter_vars='like', var_names=["~k_det", "~lambda_det"])
 
-        file = os.path.join(tempfile.gettempdir(), 'test.yaml')
+        pmsurv_dir = os.path.join(tempfile.gettempdir(), "pmsurv")
+        Path(pmsurv_dir).mkdir(parents=True, exist_ok=True)
+
+        file = os.path.join(pmsurv_dir, 'test.yaml')
         print('saving to ', file)
         wb_model.save(file)
 
@@ -99,10 +103,10 @@ class TestWeibullLinear(unittest.TestCase):
 
         summary_2 = az.summary(wb_model2.trace, filter_vars='like', var_names=["~k_det", "~lambda_det"])
 
-        self.assertAlmostEqual(summary_1['mean']['lambda_intercept[0]'], summary_2['mean']['lambda_intercept[0]'])
-        self.assertAlmostEqual(summary_1['mean']['lambda_coefs[0]'], summary_2['mean']['lambda_coefs[0]'])
-        self.assertAlmostEqual(summary_1['mean']['lambda_coefs[1]'], summary_2['mean']['lambda_coefs[1]'])
-        self.assertAlmostEqual(summary_1['mean']['lambda_coefs[2]'], summary_2['mean']['lambda_coefs[2]'])
+        self.assertAlmostEqual(summary_1['mean']['lambda_intercept'], summary_2['mean']['lambda_intercept'])
+        self.assertAlmostEqual(summary_1['mean']['lambda_A'], summary_2['mean']['lambda_A'])
+        self.assertAlmostEqual(summary_1['mean']['lambda_B'], summary_2['mean']['lambda_B'])
+        self.assertAlmostEqual(summary_1['mean']['lambda_C'], summary_2['mean']['lambda_C'])
 
     def test_score(self):
         print("test_fit_1")

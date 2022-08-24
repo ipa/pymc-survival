@@ -5,6 +5,7 @@ import unittest
 import arviz as az
 import matplotlib.pyplot as plt
 import pandas as pd
+from pathlib import Path
 
 from pmsurv.models.exponential_model import ExponentialModel
 import data
@@ -89,7 +90,10 @@ class TestExponentialModel(unittest.TestCase):
 
         summary_1 = az.summary(wb_model.trace, filter_vars='like', var_names=["~lambda_det"])
 
-        file = os.path.join(tempfile.gettempdir(), 'test.yaml')
+        pmsurv_dir = os.path.join(tempfile.gettempdir(), "pmsurv")
+        Path(pmsurv_dir).mkdir(parents=True, exist_ok=True)
+
+        file = os.path.join(pmsurv_dir, 'test.yaml')
         print('saving to ', file)
         wb_model.save(file)
 
@@ -99,9 +103,9 @@ class TestExponentialModel(unittest.TestCase):
         summary_2 = az.summary(wb_model2.trace, filter_vars='like', var_names=["~lambda_det"])
 
         self.assertAlmostEqual(summary_1['mean']['lambda_intercept'], summary_2['mean']['lambda_intercept'])
-        self.assertAlmostEqual(summary_1['mean']['lambda_coefs_A'], summary_2['mean']['lambda_coefs_A'])
-        self.assertAlmostEqual(summary_1['mean']['lambda_coefs_B'], summary_2['mean']['lambda_coefs_B'])
-        self.assertAlmostEqual(summary_1['mean']['lambda_coefs_C'], summary_2['mean']['lambda_coefs_C'])
+        self.assertAlmostEqual(summary_1['mean']['lambda_A'], summary_2['mean']['lambda_A'])
+        self.assertAlmostEqual(summary_1['mean']['lambda_B'], summary_2['mean']['lambda_B'])
+        self.assertAlmostEqual(summary_1['mean']['lambda_C'], summary_2['mean']['lambda_C'])
 
     def test_score(self):
         print("test_fit_1")
