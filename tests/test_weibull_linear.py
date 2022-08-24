@@ -3,8 +3,6 @@ import os
 import tempfile
 import unittest
 import arviz as az
-import matplotlib.pyplot as plt
-import pandas as pd
 
 from pmsurv.models.weibull_linear import WeibullModelLinear
 import data
@@ -34,8 +32,6 @@ class TestWeibullLinear(unittest.TestCase):
         k = 1
         X, y = data.synthetic_data_weibull(lam_ctrl=lam_ctrl, lam_trt=lam_trt, k=k)
         y[:, 1] = 1 - y[:, 1]  # inverse
-
-        X = pd.DataFrame(X, columns = ['A'])
         print(X)
         wb_model = WeibullModelLinear()
         fit_args = {'draws': 1000, 'tune': 500, 'target_accept': 0.85, 'chains': 2, 'cores': 1,
@@ -59,7 +55,7 @@ class TestWeibullLinear(unittest.TestCase):
         fit_args = {'draws': 1000, 'tune': 500, 'target_accept': 0.85, 'chains': 2, 'cores': 1,
                     'return_inferencedata': True}
         wb_model = WeibullModelLinear()
-        wb_model.fit(X, y, inference_args=fit_args, column_names=['A'])
+        wb_model.fit(X, y, inference_args=fit_args)
 
         summary = az.summary(wb_model.trace, filter_vars='like', var_names=["~k_det", "~lambda_det"])
         print(summary)
@@ -76,7 +72,7 @@ class TestWeibullLinear(unittest.TestCase):
         print(X.shape, y.shape)
         fit_args = {'draws': 1000, 'tune': 500, 'chains': 2, 'cores': 1, 'return_inferencedata': True}
         wb_model = WeibullModelLinear()
-        wb_model.fit(X, y, inference_args=fit_args, column_names=['a'])
+        wb_model.fit(X, y, inference_args=fit_args)
 
         summary = az.summary(wb_model.trace, filter_vars='like', var_names=["~k_det", "~lambda_det"])
         print(summary)
@@ -90,7 +86,7 @@ class TestWeibullLinear(unittest.TestCase):
         print(X.shape, y.shape)
         fit_args = {'draws': 2000, 'tune': 1000, 'chains': 2, 'cores': 1, 'return_inferencedata': True}
         wb_model = WeibullModelLinear()
-        wb_model.fit(X, y, inference_args=fit_args, column_names=included_features)
+        wb_model.fit(X, y, inference_args=fit_args)
 
         summary_1 = az.summary(wb_model.trace, filter_vars='like', var_names=["~k_det", "~lambda_det"])
 
@@ -117,7 +113,7 @@ class TestWeibullLinear(unittest.TestCase):
         fit_args = {'draws': 1000, 'tune': 1000, 'chains': 2, 'cores': 1, 'return_inferencedata': True,
                     'progressbar': True}
         wb_model = WeibullModelLinear()
-        wb_model.fit(X, y, inference_args=fit_args, column_names=included_features)
+        wb_model.fit(X, y, inference_args=fit_args)
 
         c_index = wb_model.score(X, y)
         print(f"c-index = {c_index}")

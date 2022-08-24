@@ -35,8 +35,6 @@ class TestExponentialModel(unittest.TestCase):
         X, y = data.synthetic_data_weibull(lam_ctrl=lam_ctrl, lam_trt=lam_trt, k=k)
         y[:, 1] = 1 - y[:, 1]  # inverse
 
-        X = pd.DataFrame(X, columns = ['A'])
-        print(X)
         wb_model = ExponentialModel()
         fit_args = {'draws': 1000, 'tune': 500, 'target_accept': 0.85, 'chains': 2, 'cores': 1,
                     'return_inferencedata': True}
@@ -59,12 +57,12 @@ class TestExponentialModel(unittest.TestCase):
         fit_args = {'draws': 1000, 'tune': 500, 'target_accept': 0.85, 'chains': 2, 'cores': 1,
                     'return_inferencedata': True}
         wb_model = ExponentialModel()
-        wb_model.fit(X, y, inference_args=fit_args, column_names=['A'])
+        wb_model.fit(X, y, inference_args=fit_args)
 
         summary = az.summary(wb_model.trace, filter_vars='like', var_names=["~k_det", "~lambda_det"])
         print(summary)
-        self.assertAlmostEqual(summary['mean']['lambda_intercept[0]'], lam_ctrl, 0)
-        self.assertAlmostEqual(summary['mean']['lambda_coefs[0]'], lam_trt - lam_ctrl, 0)
+        self.assertAlmostEqual(summary['mean']['lambda_intercept'], lam_ctrl, 0)
+        self.assertAlmostEqual(summary['mean']['lambda_A'], lam_trt - lam_ctrl, 0)
 
     def test_fit_intercept_only(self):
         print("test_fit_intercept_only")
@@ -72,15 +70,15 @@ class TestExponentialModel(unittest.TestCase):
         k = 1
         X, y = data.synthetic_data_intercept_only(lam=lam, k=k)
         y[:, 1] = 1 - y[:, 1]  # inverse
-        print(X.shape, y.shape)
+
         fit_args = {'draws': 1000, 'tune': 500, 'chains': 2, 'cores': 1, 'return_inferencedata': True}
         wb_model = ExponentialModel()
-        wb_model.fit(X, y, inference_args=fit_args, column_names=['a'])
+        wb_model.fit(X, y, inference_args=fit_args)
 
         summary = az.summary(wb_model.trace, filter_vars='like', var_names=["~k_det", "~lambda_det"])
         print(summary)
-        self.assertAlmostEqual(summary['mean']['lambda_intercept[0]'], lam, 0)
-        self.assertAlmostEqual(summary['mean']['k_intercept[0]'], k, 0)
+        self.assertAlmostEqual(summary['mean']['lambda_intercept'], lam, 0)
+        self.assertAlmostEqual(summary['mean']['k_intercept'], k, 0)
 
     def test_save_and_load(self):
         print("test_save_and_load")
@@ -89,7 +87,7 @@ class TestExponentialModel(unittest.TestCase):
         print(X.shape, y.shape)
         fit_args = {'draws': 2000, 'tune': 1000, 'chains': 2, 'cores': 1, 'return_inferencedata': True}
         wb_model = ExponentialModel()
-        wb_model.fit(X, y, inference_args=fit_args, column_names=included_features)
+        wb_model.fit(X, y, inference_args=fit_args)
 
         summary_1 = az.summary(wb_model.trace, filter_vars='like', var_names=["~k_det", "~lambda_det"])
 
@@ -116,7 +114,7 @@ class TestExponentialModel(unittest.TestCase):
         fit_args = {'draws': 1000, 'tune': 1000, 'chains': 2, 'cores': 1, 'return_inferencedata': True,
                     'progressbar': True}
         wb_model = ExponentialModel()
-        wb_model.fit(X, y, inference_args=fit_args, column_names=included_features)
+        wb_model.fit(X, y, inference_args=fit_args)
 
         c_index = wb_model.score(X, y)
         print(f"c-index = {c_index}")

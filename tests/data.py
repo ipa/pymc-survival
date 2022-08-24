@@ -1,10 +1,11 @@
 import warnings
 warnings.simplefilter("ignore")
+import pandas as pd
 import numpy as np
 from numpy.random import default_rng
 from scipy.stats import expon, weibull_min
 
-def synthetic_data_random(n_samples=100):
+def synthetic_data_random(n_samples=100, as_dataframe=True):
     coefficients = [2, 4, 6]
     rng = default_rng(seed=0)
     x1 = rng.standard_normal((n_samples, 1)) + 3
@@ -16,10 +17,14 @@ def synthetic_data_random(n_samples=100):
     y_time = expon.rvs(rate)
     y_event = rng.choice([1, 0], size=(n_samples, 1), p=[0.2, 0.8]).astype(np.int_)
     y = np.hstack((y_time, y_event))
+
+    if as_dataframe:
+        X = pd.DataFrame(X, columns=['A', 'B', 'C'])
+
     return X, y
 
 
-def synthetic_data_weibull(lam_ctrl, lam_trt, k, n_samples=1000):
+def synthetic_data_weibull(lam_ctrl, lam_trt, k, n_samples=1000, as_dataframe=True):
     X = np.stack((np.zeros((int(n_samples / 2))), np.ones((int(n_samples / 2))))).flatten()
     X = np.expand_dims(X, axis=1)
 
@@ -30,13 +35,19 @@ def synthetic_data_weibull(lam_ctrl, lam_trt, k, n_samples=1000):
     y_event = y_time < 15  # rng.choice([1, 0], size=(n_samples), p=[0.5, 0.5]).astype(np.int_)
     y = np.vstack((y_time, y_event)).T
 
+    if as_dataframe:
+        X = pd.DataFrame(X, columns=['A'])
+
     return X, y
 
-def synthetic_data_intercept_only(lam, k, n_samples=1000):
+def synthetic_data_intercept_only(lam, k, n_samples=1000, as_dataframe=True):
     rng = default_rng(seed=0)
     X = np.zeros((n_samples, 1))
     y_time = weibull_min.rvs(c=np.exp(k), scale=np.exp(lam), size=(n_samples)).T.flatten()
     y_event = y_time < 10 # rng.choice([1, 0], size=(n_samples), p=[0.5, 0.5]).astype(np.int_)
     y = np.vstack((y_time, y_event)).T
+
+    if as_dataframe:
+        X = pd.DataFrame(X, columns=['A'])
 
     return X, y
