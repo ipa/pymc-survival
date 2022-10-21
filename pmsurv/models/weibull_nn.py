@@ -1,21 +1,17 @@
 import copy
 import warnings
 warnings.simplefilter("ignore")
-import lifelines
-import scipy.stats as st
 import numpy as np
 from numpy.random import default_rng
 import pymc as pm
-from pmsurv.exc import PyMCModelsError
-import pmsurv.utils as putils
-from pmsurv.models.base import BayesianModel
+from pmsurv.models.base import WeibullModelBase
 import aesara.tensor as at
 
 # https://github.com/pyro-ppl/numpyro/issues/534
 # http://num.pyro.ai/en/stable/mcmc.html#numpyro.infer.mcmc.MCMC.post_warmup_state
 
 
-class WeibullModelNN(BayesianModel):
+class WeibullModelNN(WeibullModelBase):
     def __init__(self):
         super(WeibullModelNN, self).__init__()
         self.column_names = None
@@ -107,14 +103,14 @@ class WeibullModelNN(BayesianModel):
                                         sigma=self.priors['k_sd'],
                                         shape=(1))
 
-                lambda_ = pm.Deterministic("lambda_", pm.math.exp(lambda_intercept + x_hidden[:, 0]))
+                lambda_ = pm.Deterministic("lambda_det", pm.math.exp(lambda_intercept + x_hidden[:, 0]))
 
                 print('With k %s' % self.priors['k_coefs'])
                 if self.priors['k_coefs']:
-                    k_ = pm.Deterministic("k_", pm.math.exp(k_intercept + x_hidden[:, 1]))
+                    k_ = pm.Deterministic("k_det", pm.math.exp(k_intercept + x_hidden[:, 1]))
                 else:
                     k_constant = 0.0
-                    k_ = pm.Deterministic("k_", pm.math.exp(k_intercept + (x_hidden[:,1] * k_constant)))
+                    k_ = pm.Deterministic("k_det", pm.math.exp(k_intercept + (x_hidden[:,1] * k_constant)))
 
                 censored = at.eq(censor_, 1)
                 y = pm.Weibull("y", alpha=k_[~censored], beta=lambda_[~censored],
@@ -128,83 +124,6 @@ class WeibullModelNN(BayesianModel):
                                                           beta=lambda_[censored]))
 
         return model
-
-
-    def fit(self, X, y, inference_type='nuts', inference_args=None, priors=None, column_names=None):
-        self.num_training_samples, self.num_pred = X.shape
-        self.column_names = column_names
-        self.inference_args = inference_args
-
-        self.max_time = int(np.max(y))
-
-        if y.ndim != 1:
-            print('squeeze')
-            y = np.squeeze(y)
-
-        if not inference_args:
-            inference_args = self.__set_default_inference_args()
-
-        if self.cached_model is None:
-            print('create from fit')
-            self.cached_model = self.create_model(priors=priors)
-
-        with self.cached_model:
-            print(self)
-            pm.set_data({
-                'model_input': X,
-                'time_censor': y[y[:, 1] == 1, 0],
-                'time_uncensor': y[y[:, 1] == 0, 0],
-                'censor': y[:, 1].astype(np.int32)
-            })
-
-        self._inference(inference_args)
-
-        return self
-
-    def predict(self, X, return_std=True, return_curve=True, num_ppc_samples=1000, resolution=10):
-        if self.trace is None:
-            raise PyMCModelsError('Run fit on the model before predict.')
-
-        num_samples = X.shape[0]
-
-        if self.cached_model is None:
-            print('create from predict')
-            self.cached_model = self.create_model()
-
-        with self.cached_model:
-            pm.set_data({
-                'model_input': X,
-                'time_uncensor': np.zeros(num_samples).astype(np.int32),
-                'censor': np.zeros(num_samples).astype(np.int32)
-            })
-
-        ppc = pm.sample_posterior_predictive(self.trace, model=self.cached_model, return_inferencedata=False,
-                                             random_seed=0, var_names=['y', 'lambda_', 'k_'])
-        print()
-
-        t_plot = putils.get_time_axis(0, self.max_time, resolution)
-
-        pp_lambda = np.mean(ppc['lambda_'], axis=0)
-        pp_k = np.mean(ppc['k_'], axis=0)
-        pp_lambda_std = np.std(ppc['lambda_'], axis=0)
-        pp_k_std = np.std(ppc['k_'], axis=0)
-
-        t_plot_rep = np.repeat(t_plot, num_samples).reshape((len(t_plot), -1))
-        pp_surv_mean = 1 - st.weibull_min.cdf(t_plot_rep, pp_k, scale=pp_lambda).T
-        pp_surv_lower = 1 - st.weibull_min.cdf(t_plot_rep, pp_k - pp_k_std, scale=pp_lambda - pp_lambda_std).T
-        pp_surv_upper = 1 - st.weibull_min.cdf(t_plot_rep, pp_k + pp_k_std, scale=pp_lambda + pp_lambda_std).T
-        pp_surv_lower = np.nan_to_num(pp_surv_lower, 0)
-        pp_surv_upper = np.nan_to_num(pp_surv_upper, 1)
-
-        return pp_surv_mean, pp_surv_lower, pp_surv_upper
-
-    def score(self, X, y, num_ppc_samples=1000):
-        surv_prob, _, _ = self.predict(X, num_ppc_samples=num_ppc_samples)
-        # print(surv_prob)
-        surv_prob_median = np.median(surv_prob, axis=1)
-
-        c_index = lifelines.utils.concordance_index(y[:, 0], surv_prob_median, 1 - y[:, 1])
-        return c_index
 
     def save(self, file_prefix, **kwargs):
         custom_params = {
