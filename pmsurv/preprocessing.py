@@ -31,3 +31,20 @@ class LogStandardScaler:
         x_ = copy.deepcopy(x)
         x_[:, self.selected_columns] = self.pipe.inverse_transform(x_[:, self.selected_columns])
         return x_
+
+
+class SelectedColumnsRobustScaler:
+    def __init__(self, selected_columns):
+        super().__init__()
+        self.selected_columns = selected_columns
+        self.pipe = Pipeline([
+            ('scaler', preprocessing.RobustScaler())])
+
+    def fit(self, x):
+        x_ = copy.deepcopy(x)
+        self.pipe.fit(x_[:, self.selected_columns])
+
+    def transform(self, x):
+        x_ = copy.deepcopy(x)
+        x_[:, self.selected_columns] = self.pipe.transform(x_[:, self.selected_columns])
+        return x_
