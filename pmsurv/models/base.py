@@ -61,7 +61,13 @@ class BayesianModel(BaseEstimator):
             else:
                 nuts_kwargs = {}
             # step = pm.NUTS(**nuts_kwargs)
-            self.trace = pm.sample(**inference_args, random_seed=0)
+            print('start sampling')
+            if inference_args['type'] == 'blackjax':
+                inference_args.pop('type')
+                import pymc.sampling_jax
+                self.trace = pm.sampling_jax.sample_blackjax_nuts(**inference_args)
+            else:
+                self.trace = pm.sample(**inference_args, random_seed=0)
 
         # self.summary = pm.summary(self.trace)
 
