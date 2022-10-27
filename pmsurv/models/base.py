@@ -173,7 +173,7 @@ class WeibullModelBase(BayesianModel):
         self.num_training_samples, self.num_pred = X.shape
         self.column_names = list(X.columns.values)
         self.inference_args = inference_args if inference_args is not None else self.__get_default_inference_args()
-        self.max_time = int(np.max(y))
+        self.max_time = int(np.max(y[:, 0]))
 
         if y.ndim != 1:
             print('squeeze')
