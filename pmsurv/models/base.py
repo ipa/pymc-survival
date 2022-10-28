@@ -210,13 +210,11 @@ class WeibullModelBase(BayesianModel):
 
         with self.cached_model:
             pm.set_data({
-                'model_input': X,
-                'time_uncensor': np.zeros(num_samples).astype(np.int32),
-                'censor': np.zeros(num_samples).astype(np.int32)
+                'model_input': X
             })
 
         ppc = pm.sample_posterior_predictive(self.trace, model=self.cached_model, return_inferencedata=False,
-                                             random_seed=0, var_names=['y', 'lambda_det', 'k_det'])
+                                             random_seed=0, var_names=['lambda_det', 'k_det'])
         print()
 
         t_plot = pmsurv.utils.get_time_axis(0, self.max_time, resolution)
