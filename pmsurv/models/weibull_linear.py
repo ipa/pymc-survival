@@ -47,7 +47,6 @@ class WeibullModelLinear(WeibullModelBase):
         model = pm.Model()
         with model:
             if X is None:
-                print("create cached with empty data")
                 X = np.zeros([self.num_training_samples, self.num_pred])
 
             model_input = pm.MutableData("model_input", X)
@@ -55,8 +54,6 @@ class WeibullModelLinear(WeibullModelBase):
                 time_censor_ = pm.MutableData("time_censor", y[y[:, 1] == 1, 0])
                 time_uncensor_ = pm.MutableData("time_uncensor", y[y[:, 1] == 0, 0])
                 censor_ = pm.MutableData("censor", y[:, 1].astype(np.int8))
-
-            print("Priors: {}".format(str(self.priors)))
 
             lambda_intercept = pm.Normal("lambda_intercept",
                                          mu=self.priors['lambda_mu'],
@@ -66,20 +63,13 @@ class WeibullModelLinear(WeibullModelBase):
                                     mu=self.priors['k_mu'],
                                     sigma=self.priors['k_sd'])
 
-            print('making lambda')
             lambda_coefs = []
             for i, cn in enumerate(self.column_names):
-                print('add ', cn)
                 lambda_coef = pm.Normal(f'lambda_{cn}',
                                         mu=self.priors['lambda_coefs_mu'],
                                         sigma=self.priors['lambda_coefs_sd'])
                 lambda_coefs.append(model_input[:, i] * lambda_coef)
             lam = pm.math.sum(lambda_coefs, axis=0)
-            print('summed')
-            # print(lam.shape.eval())
-            # print(lam.eval())
-            # lambda_coefs = pm.Normal('lambda_coefs', mu=self.priors['lambda_coefs_mu'],
-            #                          sd=self.priors['lambda_coefs_sd'], shape=(self.num_pred,))
 
             if self.priors['k_coefs']:
                 k_coefs = []
@@ -90,19 +80,14 @@ class WeibullModelLinear(WeibullModelBase):
                     k_coefs.append(model_input[:, i] * k_coef)
                     k = pm.math.sum(k_coefs)
             else:
-                k = pm.math.zeros_like(lam) #0.0 * model_input).sum(axis=1)
+                k = pm.math.zeros_like(lam)
 
-            print('ks done')
-
-            # lambda_ = pm.Deterministic("lambda_det",
-            #                            pm.math.exp(lambda_intercept + (lambda_coefs * model_input).sum(axis=1)))
             lambda_ = pm.Deterministic("lambda_det",
                                        pm.math.exp(lambda_intercept + lam))
             k_ = pm.Deterministic("k_det", pm.math.exp(k_intercept + k))
 
             if y is not None:
                 censored_ = at.eq(censor_, 1)
-                # print(k_.shape.eval(), lambda_.shape.eval(), censored_.shape.eval())
                 y = pm.Weibull("y", alpha=k_[~censored_], beta=lambda_[~censored_],
                                observed=time_uncensor_)
 
