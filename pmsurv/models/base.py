@@ -220,10 +220,10 @@ class WeibullModelBase(BayesianModel):
         t_plot = pmsurv.utils.get_time_axis(0, self.max_time, resolution)
 
         print(ppc.keys())
-        pp_lambda = np.mean(ppc['lambda_det'], axis=0)
-        pp_k = np.mean(ppc['k_det'], axis=0)
-        pp_lambda_std = np.std(ppc['lambda_det'], axis=0)
-        pp_k_std = np.std(ppc['k_det'], axis=0)
+        pp_lambda = np.mean(ppc['lambda_det'].reshape(-1, X.shape[0]), axis=0)
+        pp_k = np.mean(ppc['k_det'].reshape(-1, X.shape[0]), axis=0)
+        pp_lambda_std = np.std(ppc['lambda_det'].reshape(-1, X.shape[0]), axis=0)
+        pp_k_std = np.std(ppc['k_det'].reshape(-1, X.shape[0]), axis=0)
 
         t_plot_rep = np.repeat(t_plot, num_samples).reshape((len(t_plot), -1))
 
