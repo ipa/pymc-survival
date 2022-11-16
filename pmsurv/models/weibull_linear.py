@@ -78,7 +78,7 @@ class WeibullModelLinear(WeibullModelBase):
                                             mu=self.priors['k_coefs_mu'],
                                             sigma=self.priors['k_coefs_sd'])
                     k_coefs.append(model_input[:, i] * k_coef)
-                    k = pm.math.sum(k_coefs)
+                k = pm.math.sum(k_coefs, axis=0)
             else:
                 k = pm.math.zeros_like(lam)
 
