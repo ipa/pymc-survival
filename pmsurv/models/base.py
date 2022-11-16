@@ -5,6 +5,7 @@ import arviz as az
 import yaml
 import numpy as np
 import pmsurv
+import pmsurv.utils
 from pmsurv.exc import PyMCModelsError
 import scipy.stats as st
 import lifelines
@@ -65,11 +66,13 @@ class BayesianModel(BaseEstimator):
                 self.trace = pm.sample(**inference_args, random_seed=0)
             elif inference_args['type'] == 'blackjax':
                 inference_args.pop('type')
+                inference_args.pop('cores')
                 import pymc.sampling_jax
                 if 'progressbar' in inference_args:
                     inference_args.pop('progressbar')
                 if 'return_inferencedata' in inference_args:
                     inference_args.pop('return_inferencedata')
+
                 self.trace = pm.sampling_jax.sample_blackjax_nuts(**inference_args)
 
 
