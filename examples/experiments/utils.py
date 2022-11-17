@@ -105,13 +105,15 @@ class RollingMean:
         self.vals.append(val)
 
     def get_mean(self):
-        mean = np.mean(self.vals)
-        return mean
+        return np.mean(self.vals)
 
     def get_ci(self):
         mean, sigma = np.mean(self.vals), np.std(self.vals)
         conf_int = sp.stats.norm.interval(0.95, loc=mean, scale=sigma)
         return conf_int
+
+    def get_max(self):
+        return np.max(self.vals)
 
 
 from sklearn.feature_selection import mutual_info_classif

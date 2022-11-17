@@ -1,3 +1,6 @@
+import warnings
+
+import joblib
 import matplotlib
 import argparse
 import os
@@ -22,7 +25,8 @@ from tqdm import tqdm
 import numpy as np
 from scipy import stats as sp
 matplotlib.use('Agg')
-
+from skopt import BayesSearchCV
+from skopt.space import Real, Categorical, Integer
 
 localtime = time.localtime()
 TIMESTRING = time.strftime("%m%d%Y%M", localtime)
@@ -38,23 +42,11 @@ def parse_args():
     parser.add_argument('--results_dir', default='results',
                         help='Directory to save resulting models and visualizations')
     parser.add_argument('--runs', type=int, default=1)
-    # parser.add_argument('--plot_error', action="store_true", help="If arg present, plot absolute error plots")
-    # parser.add_argument('--treatment_idx', default=None, type=int,
-    #                     help='(Optional) column index of treatment variable in dataset. If present, run treatment visualizations.')
-    parser.add_argument('--n_trees', type=int, default=100, help='(Optional) Number of trees')
+    parser.add_argument('--jobs', type=int, default=1)
     return parser.parse_args()
 
 
-#
-# >>>
-# >>> svc = svm.SVC()
-# >>> clf = GridSearchCV(svc, parameters)
-# >>> clf.fit(iris.data, iris.target)
-# GridSearchCV(estimator=SVC(),
-#              param_grid={'C': [1, 10], 'kernel': ('linear', 'rbf')})
-# >>> sorted(clf.cv_results_.keys())
-
-def run_rsf(X, y, config):
+def run_rsf(X, y, config, kwargs):
     X_train, X_test, y_train, y_test = train_test_split(X, y,
                                                         test_size=config['split']['test_size'],
                                                         shuffle=config['split']['shuffle'])
@@ -71,17 +63,19 @@ def run_rsf(X, y, config):
     )
 
     parameters = {
-        'model__n_estimators': np.arange(5, 12, 1, dtype=int),
-        'selector__k': np.arange(1, X_train.shape[1]+1, dtype=int)
+        'model__n_estimators': Integer(5, 25),
+        'model__max_depth': Categorical([3, 5, 7, 9]),
+        'selector__k': Integer(1, X_train.shape[1]),
     }
 
-    gscv = GridSearchCV(pipeline, parameters)
-    gscv.fit(X_train, y_train)
+    jobs = 1 if 'jobs' not in kwargs else kwargs['jobs']
+    opt = BayesSearchCV(pipeline, parameters, n_jobs=jobs, n_points=2, n_iter=50, cv=5)
+    opt.fit(X_train, y_train)
 
-    metrics = gscv.best_estimator_.score(X_test, y_test)
+    metrics = opt.best_estimator_.score(X_test, y_test)
     logger.info("Test metrics: " + str(metrics))
 
-    return metrics, gscv.best_estimator_, gscv.best_params_
+    return metrics, opt.best_estimator_, opt.best_params_, (X_train, X_test, y_train, y_test)
 
 
 if __name__ == '__main__':
@@ -104,10 +98,18 @@ if __name__ == '__main__':
     logger.info(f"Running for {args.runs} runs..")
     pbar = tqdm(range(args.runs))
 
+    experiment_dir = os.path.join(args.results_dir, args.experiment)
+    os.makedirs(experiment_dir, exist_ok=True)
+
     c_indexes = utils.RollingMean()
+    warnings.filterwarnings(action='ignore')
     for run in pbar:
-        c_index, model, params = run_rsf(X, y, config)
+        c_index, model, params, data = run_rsf(X, y, config, {'jobs': args.jobs})
         c_indexes.add(c_index)
         utils.save_results(args.results_dir, 'rsf', args.dataset, c_index, params)
         pbar.set_description(f"C-Index {str(c_indexes)}")
+
+        if c_index >= c_indexes.get_max():
+            data_dump = {'model': model, 'params': params, 'data': data}
+            joblib.dump(data_dump, os.path.join(experiment_dir, f"rsf_best.pkl"))
 
