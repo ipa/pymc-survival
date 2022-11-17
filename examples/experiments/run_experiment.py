@@ -20,6 +20,7 @@ TIMESTRING = time.strftime("%m%d%Y%M", localtime)
 
 class DummyFile(object):
     def write(self, x): pass
+    def flush(self): pass
 
 
 @contextlib.contextmanager
