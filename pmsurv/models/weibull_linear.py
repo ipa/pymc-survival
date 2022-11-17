@@ -103,7 +103,7 @@ class WeibullModelLinear(WeibullModelBase):
         custom_params = {
             'column_names': self.column_names,
             'priors': self.priors,
-            'inference_args': self.inference_args,
+            # 'inference_args': self.inference_args,
             'max_observed_time': self.max_time,
             'num_pred': self.num_pred,
             'num_training_samples': self.num_training_samples
@@ -119,5 +119,5 @@ class WeibullModelLinear(WeibullModelBase):
         self.num_training_samples = params['num_training_samples']
         self.column_names = params['column_names']
         self.priors = params['priors']
-        self.inference_args = params['inference_args']
+        # self.inference_args = params['inference_args']
         self.max_time = params['max_observed_time']

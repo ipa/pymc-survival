@@ -11,7 +11,7 @@ import pmsurv.utils
 from pmsurv.exc import PyMCModelsError
 import scipy.stats as st
 import lifelines
-
+import pandas as pd
 logger = logging.getLogger(__name__)
 
 
@@ -103,8 +103,8 @@ class BayesianModel(BaseEstimator):
             'chains': 2,
             'cores': 1,
             'return_inferencedata': True,
-            'progressbar': True,
-            'type': 'blackjax'
+            'progressbar': False,
+            'type': 'nuts'
         }
         return inference_args
 
@@ -175,18 +175,13 @@ class WeibullModelBase(BayesianModel):
     def create_model(self, X=None, y=None, priors=None):
         raise NotImplementedError
 
-    @staticmethod
-    def _get_default_inference_args():
-        return {
-            'num_samples': 1000,
-            'warmup_ratio': 1,
-            'num_chains': 1
-        }
-
     def fit(self, X, y, inference_args=None, priors=None):
         self.num_training_samples, self.num_pred = X.shape
-        self.column_names = list(X.columns.values)
-        self.inference_args = inference_args if inference_args is not None else self.__get_default_inference_args()
+        if X is pd.DataFrame:
+            self.column_names = X.columns.values
+        else:
+            self.column_names = ["column_%i" % i for i in range(0, self.num_pred)]
+
         self.max_time = int(np.max(y[:, 0]))
 
         if y.ndim != 1:
@@ -194,7 +189,7 @@ class WeibullModelBase(BayesianModel):
             y = np.squeeze(y)
 
         if not inference_args:
-            inference_args = self.__set_default_inference_args()
+            inference_args = BayesianModel._get_default_inference_args()
 
         if self.cached_model is None:
             logging.info('create from fit')
