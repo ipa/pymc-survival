@@ -1,4 +1,6 @@
 # Adaptet from pymc-lean: https://github.com/pymc-learn/pymc-learn/blob/master/pmlearn/base.py
+import logging
+
 from sklearn.base import BaseEstimator
 import pymc as pm
 import arviz as az
@@ -9,6 +11,9 @@ import pmsurv.utils
 from pmsurv.exc import PyMCModelsError
 import scipy.stats as st
 import lifelines
+
+logger = logging.getLogger(__name__)
+
 
 class BayesianModel(BaseEstimator):
     """
@@ -57,12 +62,10 @@ class BayesianModel(BaseEstimator):
             See PyMC3 doc for permissible values.
         """
         with self.cached_model:
-            if 'nuts_kwargs' in inference_args:
-                nuts_kwargs = inference_args.pop('nuts_kwargs')
-            else:
-                nuts_kwargs = { }
-
-            if 'type' not in inference_args or inference_args['type'] == 'nuts':
+            if 'type' not in inference_args:
+                self.trace = pm.sample(**inference_args, random_seed=0)
+            elif inference_args['type'] == 'nuts':
+                inference_args.pop('type')
                 self.trace = pm.sample(**inference_args, random_seed=0)
             elif inference_args['type'] == 'blackjax':
                 inference_args.pop('type')
@@ -75,8 +78,8 @@ class BayesianModel(BaseEstimator):
 
                 self.trace = pm.sampling_jax.sample_blackjax_nuts(**inference_args)
 
-
-    def __set_default_inference_args(self):
+    @staticmethod
+    def _get_default_inference_args():
         """
         Set default values for inference arguments if none are provided, dependent on inference type.
 
@@ -94,7 +97,14 @@ class BayesianModel(BaseEstimator):
             number of samples to draw
         """
         inference_args = {
-            'draws': 2000
+            'draws': 1000,
+            'tune': 500,
+            'target_accept': 0.8,
+            'chains': 2,
+            'cores': 1,
+            'return_inferencedata': True,
+            'progressbar': True,
+            'type': 'blackjax'
         }
         return inference_args
 
@@ -128,7 +138,6 @@ class BayesianModel(BaseEstimator):
         self.params['trace_file'] = trace_file
         with open(file, 'w') as f:
             yaml.dump(self.params, f)
-
 
     def load(self, file):
         """
@@ -181,14 +190,14 @@ class WeibullModelBase(BayesianModel):
         self.max_time = int(np.max(y[:, 0]))
 
         if y.ndim != 1:
-            print('squeeze')
+            logging.debug('squeeze')
             y = np.squeeze(y)
 
         if not inference_args:
             inference_args = self.__set_default_inference_args()
 
         if self.cached_model is None:
-            print('create from fit')
+            logging.info('create from fit')
             self.cached_model = self.create_model(X, y, priors=priors)
 
         with self.cached_model:
@@ -200,6 +209,7 @@ class WeibullModelBase(BayesianModel):
             })
 
         self._inference(inference_args)
+        print('fitted')
 
     def predict(self, X, return_std=True, num_ppc_samples=1000, resolution=10):
         if self.trace is None:
@@ -208,7 +218,7 @@ class WeibullModelBase(BayesianModel):
         num_samples = X.shape[0]
 
         if self.cached_model is None:
-            print('create from predict')
+            logging.info('create from predict')
             self.cached_model = self.create_model()
 
         with self.cached_model:
@@ -217,12 +227,12 @@ class WeibullModelBase(BayesianModel):
             })
 
         ppc = pm.sample_posterior_predictive(self.trace, model=self.cached_model, return_inferencedata=False,
-                                             random_seed=0, var_names=['lambda_det', 'k_det'])
-        print()
+                                             random_seed=0, progressbar=False, var_names=['lambda_det', 'k_det'])
+        logging.info("")
 
         t_plot = pmsurv.utils.get_time_axis(0, self.max_time, resolution)
 
-        print(ppc.keys())
+        logging.info(ppc.keys())
         pp_lambda = np.mean(ppc['lambda_det'].reshape(-1, X.shape[0]), axis=0)
         pp_k = np.mean(ppc['k_det'].reshape(-1, X.shape[0]), axis=0)
         pp_lambda_std = np.std(ppc['lambda_det'].reshape(-1, X.shape[0]), axis=0)

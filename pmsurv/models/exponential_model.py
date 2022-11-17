@@ -1,6 +1,9 @@
 # import warnings
 # warnings.simplefilter("ignore")
+import logging
+
 import lifelines
+import pandas as pd
 import scipy.stats as st
 import numpy as np
 from numpy.random import default_rng
@@ -9,6 +12,8 @@ from pmsurv.exc import PyMCModelsError
 from pmsurv.models.base import BayesianModel
 import pmsurv.utils
 import aesara.tensor as at
+
+logger = logging.getLogger(__name__)
 
 
 class ExponentialModel(BayesianModel):
@@ -30,14 +35,6 @@ class ExponentialModel(BayesianModel):
             'lambda_coefs_sd': 1
         }
 
-    @staticmethod
-    def _get_default_inference_args():
-        return {
-            'num_samples': 1000,
-            'warmup_ratio': 1,
-            'num_chains': 1
-        }
-
     def __str__(self):
         str_output = "ExponentialModel \n\r"
         str_output += str(self.column_names) + "\r\n"
@@ -54,7 +51,7 @@ class ExponentialModel(BayesianModel):
         model = pm.Model()
         with model:
             if X is None:
-                print("create cached with empty data")
+                logger.info("create cached with empty data")
                 model_input = pm.MutableData("model_input", np.zeros([self.num_training_samples, self.num_pred]))
                 time_censor_ = pm.MutableData("time_censor",
                                               np.zeros(np.ceil(self.num_training_samples / 2).astype(int)))
@@ -63,7 +60,7 @@ class ExponentialModel(BayesianModel):
                 censor_ = pm.MutableData("censor", default_rng(seed=0).choice([1, 0], size=(self.num_training_samples),
                                                                               p=[0.5, 0.5]).astype(np.int32))
             else:
-                print("create cached with real data")
+                logger.info("create cached with real data")
                 model_input = pm.MutableData("model_input", X)
                 time_censor_ = pm.MutableData("time_censor", y[y[:, 1] == 1, 0])
                 time_uncensor_ = pm.MutableData("time_uncensor", y[y[:, 1] == 0, 0])
@@ -71,7 +68,7 @@ class ExponentialModel(BayesianModel):
                 # print(censor_.dtype)
 
         with model:
-            print("Priors: {}".format(str(self.priors)))
+            logger.info("Priors: {}".format(str(self.priors)))
 
             lambda_intercept = pm.Normal("lambda_intercept",
                                          mu=self.priors['lambda_mu'], sigma=self.priors['lambda_sd'])
@@ -84,7 +81,7 @@ class ExponentialModel(BayesianModel):
                 lambda_coefs.append(model_input[:, i] * lambda_coef)
             lambda_det = pm.Deterministic("lambda_det", pm.math.exp(lambda_intercept + sum(lambda_coefs)))
 
-            print(lambda_det.shape.eval(), time_censor_.shape.eval(), time_uncensor_.shape.eval())
+            logger.info(lambda_det.shape.eval(), time_censor_.shape.eval(), time_uncensor_.shape.eval())
 
             censor_ = at.eq(censor_, 1)
             y = pm.Exponential("y", at.ones_like(time_uncensor_) / lambda_det[~censor_],
@@ -102,20 +99,22 @@ class ExponentialModel(BayesianModel):
 
     def fit(self, X, y, inference_args=None, priors=None):
         self.num_training_samples, self.num_pred = X.shape
-        self.column_names = list(X.columns.values)
-        self.inference_args = inference_args if inference_args is not None else ExponentialModel._get_default_inference_args()
+        if X is pd.DataFrame:
+            self.column_names = X.columns.values
+        else:
+            self.column_names = ["column_%i" % i for i in range(0, self.num_pred)]
 
         self.max_time = int(np.max(y))
 
         if y.ndim != 1:
-            print('squeeze')
+            logger.info('squeeze')
             y = np.squeeze(y)
 
         if not inference_args:
-            inference_args = self.__set_default_inference_args()
+            inference_args = BayesianModel._get_default_inference_args()
 
         if self.cached_model is None:
-            print('create from fit')
+            logger.info('create from fit')
             self.cached_model = self.create_model(X, y, priors=priors)
 
         with self.cached_model:
@@ -137,7 +136,7 @@ class ExponentialModel(BayesianModel):
         num_samples = X.shape[0]
 
         if self.cached_model is None:
-            print('create from predict')
+            logger.info('create from predict')
             self.cached_model = self.create_model()
 
         with self.cached_model:
@@ -148,12 +147,12 @@ class ExponentialModel(BayesianModel):
             })
 
         ppc = pm.sample_posterior_predictive(self.trace, model=self.cached_model, return_inferencedata=False,
-                                             random_seed=0, var_names=['y', 'lambda_det'])
-        print()
+                                             random_seed=0, progressbar=False, var_names=['y', 'lambda_det'])
+        logger.info("")
 
         t_plot = pmsurv.utils.get_time_axis(0, self.max_time, resolution)
 
-        print(ppc.keys())
+        logger.info(ppc.keys())
         pp_lambda = np.mean(ppc['lambda_det'].reshape(-1, X.shape[0]), axis=0)
         pp_lambda_std = np.std(ppc['lambda_det'].reshape(-1, X.shape[0]), axis=0)
 
@@ -178,21 +177,21 @@ class ExponentialModel(BayesianModel):
         custom_params = {
             'column_names': self.column_names,
             'priors': self.priors,
-            'inference_args': self.inference_args,
+            # 'inference_args': self.inference_args,
             'max_observed_time': self.max_time,
             'num_pred': self.num_pred,
             'num_training_samples': self.num_training_samples
         }
-        print('store: ', self.priors)
+        logger.info('store: ', self.priors)
 
         super(ExponentialModel, self).save(file_prefix, custom_params)
 
     def load(self, file_prefix, **kwargs):
         params = super(ExponentialModel, self).load(file_prefix)
-        print('load: ', params['priors'])
+        logger.info('load: ', params['priors'])
         self.num_pred = params['num_pred']
         self.num_training_samples = params['num_training_samples']
         self.column_names = params['column_names']
         self.priors = params['priors']
-        self.inference_args = params['inference_args']
+        # self.inference_args = params['inference_args']
         self.max_time = params['max_observed_time']
