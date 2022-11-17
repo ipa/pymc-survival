@@ -11,6 +11,7 @@ from sklearn.model_selection import train_test_split
 from skopt import BayesSearchCV
 import utils
 import pmsurv_exponential
+import pmsurv_weibull
 import rsf
 
 localtime = time.localtime()
@@ -31,25 +32,29 @@ def nostdout():
 
 preprocess_data_fun = {
     'pmsurv_exponential': pmsurv_exponential.preprocess_data,
+    'pmsurv_weibull_linear': pmsurv_weibull.preprocess_data,
     'rsf': rsf.preprocess_data
 }
 
 train_fun = {
+    'pmsurv_exponential': pmsurv_exponential.train_model,
+    'pmsurv_weibull_linear': pmsurv_weibull.train_model,
+    'pmsurv_weibull_linear_k': pmsurv_weibull.train_model,
+    'pmsurv_weibull_nn': pmsurv_weibull.train_model,
+    'pmsurv_weibull_nn_k': pmsurv_weibull.train_model,
     'rsf': rsf.train_model,
-    'pmsurv_exponential': pmsurv_exponential.train_model
 }
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('model', type=str)
+    parser.add_argument('model', type=str, help='name of the model')
     parser.add_argument('experiment', help='name of the experiment that is being run')
-    parser.add_argument('dataset', help='.h5 File containing the train/valid/test datasets')
-    parser.add_argument('--results_dir', default='results',
-                        help='Directory to save resulting models and visualizations')
-    parser.add_argument('--runs', type=int, default=1)
-    parser.add_argument('--jobs', type=int, default=1)
-    parser.add_argument('--n-iter', type=int, default=25)
+    parser.add_argument('dataset', help='folder containeing dataset (data.csv)')
+    parser.add_argument('--results_dir', default='results', help='directory to save results')
+    parser.add_argument('--runs', type=int, default=1, help='repetitions of experiments')
+    parser.add_argument('--jobs', type=int, default=1, help='nr of parallel processes')
+    parser.add_argument('--n-iter', type=int, default=25, help='number of iterations in search')
     return parser.parse_args()
 
 
@@ -113,6 +118,12 @@ if __name__ == '__main__':
         utils.save_results(args.results_dir, args.model, args.dataset, c_index, params)
         pbar.set_description(f"C-Index {str(c_indexes)}")
 
-        # if c_index >= c_indexes.get_max():
-        #     data_dump = {'model': model, 'params': params, 'data': data}
-            # joblib.dump(data_dump, os.path.join(experiment_dir, f"{args.model}_best.pkl"))
+        if c_index >= c_indexes.get_max():
+            data_dump = {'params': params, 'data': data}
+            joblib.dump(data_dump, os.path.join(experiment_dir, f"{args.model}_best.pkl"))
+            try:
+                data_dump = {'params': params, 'data': data}
+                joblib.dump(data_dump, os.path.join(experiment_dir, f"{args.model}_best.pkl"))
+            except:
+                logger.error("Failed to save model, need to retrain...")
+
