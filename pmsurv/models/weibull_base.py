@@ -22,7 +22,7 @@ class WeibullModelBase(BayesianModel):
     def fit(self, X, y, inference_args=None, priors=None):
         self.num_training_samples, self.num_pred = X.shape
         if isinstance(X, pd.DataFrame):
-            self.column_names = X.columns.values
+            self.column_names = list(X.columns.values)
         else:
             self.column_names = ["column_%i" % i for i in range(0, self.num_pred)]
 
