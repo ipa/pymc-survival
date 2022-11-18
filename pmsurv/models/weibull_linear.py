@@ -1,8 +1,10 @@
+import logging
 import numpy as np
-from numpy.random import default_rng
 import pymc as pm
 from pmsurv.models.weibull_base import WeibullModelBase
 import aesara.tensor as at
+
+logger = logging.getLogger(__name__)
 
 
 class WeibullModelLinear(WeibullModelBase):
@@ -55,6 +57,8 @@ class WeibullModelLinear(WeibullModelBase):
                 time_uncensor_ = pm.MutableData("time_uncensor", y[y[:, 1] == 0, 0])
                 censor_ = pm.MutableData("censor", y[:, 1].astype(np.int8))
 
+        with model:
+            logger.info("Priors: {}".format(str(self.priors)))
             lambda_intercept = pm.Normal("lambda_intercept",
                                          mu=self.priors['lambda_mu'],
                                          sigma=self.priors['lambda_sd'])
@@ -69,7 +73,7 @@ class WeibullModelLinear(WeibullModelBase):
                                         mu=self.priors['lambda_coefs_mu'],
                                         sigma=self.priors['lambda_coefs_sd'])
                 lambda_coefs.append(model_input[:, i] * lambda_coef)
-            lam = pm.math.sum(lambda_coefs, axis=0)
+            lambda_det = pm.Deterministic("lambda_det", pm.math.exp(lambda_intercept + sum(lambda_coefs)))
 
             if self.priors['k_coefs']:
                 k_coefs = []
@@ -80,22 +84,19 @@ class WeibullModelLinear(WeibullModelBase):
                     k_coefs.append(model_input[:, i] * k_coef)
                 k = pm.math.sum(k_coefs, axis=0)
             else:
-                k = pm.math.zeros_like(lam)
-
-            lambda_ = pm.Deterministic("lambda_det",
-                                       pm.math.exp(lambda_intercept + lam))
-            k_ = pm.Deterministic("k_det", pm.math.exp(k_intercept + k))
+                k = pm.math.zeros_like(lambda_det)
+            k_det = pm.Deterministic("k_det", pm.math.exp(k_intercept + k))
 
             if y is not None:
                 censored_ = at.eq(censor_, 1)
-                y = pm.Weibull("y", alpha=k_[~censored_], beta=lambda_[~censored_],
+                y = pm.Weibull("y", alpha=k_det[~censored_], beta=lambda_det[~censored_],
                                observed=time_uncensor_)
 
                 def weibull_lccdf(x, alpha, beta):
                     """ Log complementary cdf of Weibull distribution. """
                     return -((x / beta) ** alpha)
 
-                y_cens = pm.Potential("y_cens", weibull_lccdf(time_censor_, alpha=k_[censored_], beta=lambda_[censored_]))
+                y_cens = pm.Potential("y_cens", weibull_lccdf(time_censor_, alpha=k_det[censored_], beta=lambda_det[censored_]))
 
         return model
 

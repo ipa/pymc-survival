@@ -91,14 +91,14 @@ class BayesianModel(BaseEstimator):
             number of samples to draw
         """
         inference_args = {
-            'draws': 1000,
-            'tune': 500,
+            'draws': 2000,
+            'tune': 1000,
             'target_accept': 0.8,
             'chains': 2,
             'cores': 1,
             'return_inferencedata': True,
             'progressbar': False,
-            'type': 'nuts'
+            'type': 'blackjax'
         }
         return inference_args
 

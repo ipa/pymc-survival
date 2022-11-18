@@ -104,7 +104,7 @@ class ExponentialModel(BayesianModel):
         else:
             self.column_names = ["column_%i" % i for i in range(0, self.num_pred)]
 
-        self.max_time = int(np.max(y))
+        self.max_time = int(np.max(y[:, 0]))
 
         if y.ndim != 1:
             logger.info('squeeze')
