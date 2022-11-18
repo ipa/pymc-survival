@@ -4,7 +4,7 @@ warnings.simplefilter("ignore")
 import numpy as np
 from numpy.random import default_rng
 import pymc as pm
-from pmsurv.models.base import WeibullModelBase
+from pmsurv.models.weibull_base import WeibullModelBase
 import aesara.tensor as at
 
 # https://github.com/pyro-ppl/numpyro/issues/534
@@ -129,7 +129,7 @@ class WeibullModelNN(WeibullModelBase):
         custom_params = {
             'column_names': self.column_names,
             'priors': self.priors,
-            'inference_args': self.inference_args,
+            # 'inference_args': self.inference_args,
             'max_observed_time': self.max_time,
             'num_pred': self.num_pred,
             'num_training_samples': self.num_training_samples,
@@ -144,7 +144,7 @@ class WeibullModelNN(WeibullModelBase):
         self.num_pred = params['num_pred']
         self.num_training_samples = params['num_training_samples']
         self.priors = params['priors']
-        self.inference_args = params['inference_args']
+        # self.inference_args = params['inference_args']
         self.max_time = params['max_observed_time']
 
     def __show_graph(self):

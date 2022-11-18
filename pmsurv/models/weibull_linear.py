@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.random import default_rng
 import pymc as pm
-from pmsurv.models.base import WeibullModelBase
+from pmsurv.models.weibull_base import WeibullModelBase
 import aesara.tensor as at
 
 
