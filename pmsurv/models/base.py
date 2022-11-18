@@ -117,6 +117,9 @@ class BayesianModel(BaseEstimator):
     def score(self, X, y, **kwargs):
         raise NotImplementedError
 
+    def print_summary(self):
+        print(az.summary(self.trace))
+
     def save(self, file, custom_params=None):
         """
         Saves the trace and custom params to files with the given file_prefix.
