@@ -2,7 +2,7 @@ features:
   - 'age'
   - 'sex_2'
   - 'cd4'
-  - 'hemophil_1',
+  - 'hemophil_1'
   - 'priorzdv'
   - 'strat2_0'
   - 'strat2_1'
