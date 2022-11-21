@@ -1,9 +1,12 @@
+import os
+import utils
+import yaml
+import joblib
 from sklearn.feature_selection import SelectKBest
 from sklearn.pipeline import Pipeline
 from sksurv.datasets import get_x_y
 from sksurv.ensemble import RandomSurvivalForest
 from skopt.space import Real, Categorical, Integer
-import utils
 
 
 def preprocess_data(dataset, config):
@@ -31,3 +34,15 @@ def train_model(X_train, y_train, config, train_kwargs):
     fit_params = {}
 
     return pipeline, parameters, fit_params
+
+def save(save_dir, model, c_index, params, data):
+    os.makedirs(save_dir, exist_ok=True)
+
+    joblib.dump(model, os.path.join(save_dir, "model.pkl"))
+    joblib.dump(data, os.path.join(save_dir, "data.pkl"))
+    metadata = {
+        'c_index': c_index,
+        'params': params,
+    }
+    with open(os.path.join(save_dir, "params.yaml"), 'w') as f:
+        yaml.dump(metadata)

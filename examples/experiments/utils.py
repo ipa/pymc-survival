@@ -80,12 +80,14 @@ def bootstrap_metric(metric_fxn, dataset, N=100):
     }
 
 
-def save_results(results_dir, model, experiment, cindex, params):
+def save_results(results_dir, model, experiment, cindex, params, start_time, run):
     os.makedirs(results_dir, exist_ok=True)
     df_results = pd.DataFrame({
         'experiment': [experiment],
         'model': [model],
         'cindex': [cindex],
+        'starttime': [start_time],
+        'run': [run],
         'hyperparams': [params]
     })
     result_file = os.path.join(results_dir, "results.csv")
@@ -124,4 +126,3 @@ def mutual_info_surv(X, y):
     y_time_median = np.median(y_np[y_np[:, 0] == 1, 1])
     y_event_median = y_np[:, 1] < y_time_median
     return mutual_info_classif(X, y_event_median)
-
