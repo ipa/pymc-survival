@@ -45,4 +45,4 @@ def save(save_dir, model, c_index, params, data):
         'params': params,
     }
     with open(os.path.join(save_dir, "params.yaml"), 'w') as f:
-        yaml.dump(metadata)
+        yaml.dump(metadata, f)

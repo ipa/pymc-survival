@@ -70,7 +70,7 @@ class BayesianModel(BaseEstimator):
                 if 'return_inferencedata' in inference_args:
                     inference_args.pop('return_inferencedata')
 
-                self.trace = pm.sampling_jax.sample_blackjax_nuts(**inference_args)
+                self.trace = pm.sampling_jax.sample_numpyro_nuts(**inference_args)
 
     @staticmethod
     def _get_default_inference_args():

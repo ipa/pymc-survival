@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 class WeibullModelLinear(WeibullModelBase):
-    def __init__(self):
+    def __init__(self, with_k=False):
         super(WeibullModelLinear, self).__init__()
         self.column_names = None
         self.max_time = None
@@ -16,6 +16,7 @@ class WeibullModelLinear(WeibullModelBase):
         self.fit_args = None
         self.num_training_samples = None
         self.num_pred = None
+        self.with_k = with_k
 
     @staticmethod
     def _get_default_priors():
@@ -45,6 +46,7 @@ class WeibullModelLinear(WeibullModelBase):
             self.priors = priors
         if self.priors is None:
             self.priors = WeibullModelLinear._get_default_priors()
+        self.priors['k_coefs'] = self.with_k
 
         model = pm.Model()
         with model:
@@ -76,6 +78,7 @@ class WeibullModelLinear(WeibullModelBase):
             lambda_det = pm.Deterministic("lambda_det", pm.math.exp(lambda_intercept + sum(lambda_coefs)))
 
             if self.priors['k_coefs']:
+                logger.info('with k')
                 k_coefs = []
                 for i, cn in enumerate(self.column_names):
                     k_coef = pm.Normal(f'k_{cn}',
