@@ -51,21 +51,13 @@ class ExponentialModel(BayesianModel):
         model = pm.Model()
         with model:
             if X is None:
-                logger.info("create cached with empty data")
-                model_input = pm.MutableData("model_input", np.zeros([self.num_training_samples, self.num_pred]))
-                time_censor_ = pm.MutableData("time_censor",
-                                              np.zeros(np.ceil(self.num_training_samples / 2).astype(int)))
-                time_uncensor_ = pm.MutableData("time_uncensor",
-                                                np.zeros(np.floor(self.num_training_samples / 2).astype(int)))
-                censor_ = pm.MutableData("censor", default_rng(seed=0).choice([1, 0], size=(self.num_training_samples),
-                                                                              p=[0.5, 0.5]).astype(np.int32))
-            else:
-                logger.info("create cached with real data")
-                model_input = pm.MutableData("model_input", X)
+                X = np.zeros([self.num_training_samples, self.num_pred])
+
+            model_input = pm.MutableData("model_input", X)
+            if y is not None:
                 time_censor_ = pm.MutableData("time_censor", y[y[:, 1] == 1, 0])
                 time_uncensor_ = pm.MutableData("time_uncensor", y[y[:, 1] == 0, 0])
                 censor_ = pm.MutableData("censor", y[:, 1].astype(np.int8))
-                # print(censor_.dtype)
 
         with model:
             logger.info("Priors: {}".format(str(self.priors)))
