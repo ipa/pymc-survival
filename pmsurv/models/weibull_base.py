@@ -34,6 +34,7 @@ class WeibullModelBase(BayesianModel):
 
         if not inference_args:
             inference_args = BayesianModel._get_default_inference_args()
+            #inference_args['type'] = 'nuts'
 
         if self.cached_model is None:
             logging.info('create from fit')

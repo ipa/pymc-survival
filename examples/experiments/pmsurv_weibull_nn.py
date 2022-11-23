@@ -1,6 +1,6 @@
 from sklearn.feature_selection import SelectKBest
 from sklearn.pipeline import Pipeline
-from pmsurv.models.weibull_linear import WeibullModelLinear
+from pmsurv.models.weibull_nn import WeibullModelNN
 from skopt.space import Real, Categorical, Integer
 import utils
 
@@ -16,7 +16,7 @@ def train_model(X_train, y_train, config, train_kwargs):
     pipeline = Pipeline(
         [
             ('selector', SelectKBest(utils.mutual_info_surv)),
-            ('model', WeibullModelLinear())
+            ('model', WeibullModelNN())
         ]
     )
 
@@ -35,17 +35,17 @@ def train_model(X_train, y_train, config, train_kwargs):
     }
 
     return pipeline, parameters, fit_params
+
 
 def train_model_k(X_train, y_train, config, train_kwargs):
     pipeline = Pipeline(
         [
             ('selector', SelectKBest(utils.mutual_info_surv)),
-            ('model', WeibullModelLinear())
+            ('model', WeibullModelNN(with_k=True))
         ]
     )
 
     parameters = {
-        'model__with_k': Categorical([True, False]),
         'selector__k': Integer(1, X_train.shape[1]),
     }
 
@@ -60,3 +60,5 @@ def train_model_k(X_train, y_train, config, train_kwargs):
     }
 
     return pipeline, parameters, fit_params
+
+

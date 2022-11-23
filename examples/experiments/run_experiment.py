@@ -12,10 +12,10 @@ from skopt import BayesSearchCV
 import utils
 import pmsurv_exponential
 import pmsurv_weibull
+import pmsurv_weibull_nn
 import rsf
-
-localtime = time.localtime()
-TIMESTRING = time.strftime("%m%d%Y%M", localtime)
+import coxph
+import deepsurv
 
 
 class DummyFile(object):
@@ -34,16 +34,34 @@ def nostdout():
 preprocess_data_fun = {
     'pmsurv_exponential': pmsurv_exponential.preprocess_data,
     'pmsurv_weibull_linear': pmsurv_weibull.preprocess_data,
-    'rsf': rsf.preprocess_data
+    'pmsurv_weibull_linear_k': pmsurv_weibull.preprocess_data,
+    'pmsurv_weibull_nn': pmsurv_weibull_nn.preprocess_data,
+    'pmsurv_weibull_nn_k': pmsurv_weibull_nn.preprocess_data,
+    'rsf': rsf.preprocess_data,
+    'cox': coxph.preprocess_data,
+    'deepsurv': deepsurv.preprocess_data
 }
 
 train_fun = {
     'pmsurv_exponential': pmsurv_exponential.train_model,
     'pmsurv_weibull_linear': pmsurv_weibull.train_model,
-    'pmsurv_weibull_linear_k': pmsurv_weibull.train_model,
-    'pmsurv_weibull_nn': pmsurv_weibull.train_model,
-    'pmsurv_weibull_nn_k': pmsurv_weibull.train_model,
+    'pmsurv_weibull_linear_k': pmsurv_weibull.train_model_k,
+    'pmsurv_weibull_nn': pmsurv_weibull_nn.train_model,
+    'pmsurv_weibull_nn_k': pmsurv_weibull_nn.train_model,
     'rsf': rsf.train_model,
+    'cox': coxph.train_model,
+    'deepsurv': deepsurv.train_model
+}
+
+save_fun = {
+    'pmsurv_exponential': pmsurv_exponential.save,
+    'pmsurv_weibull_linear': pmsurv_exponential.save,
+    'pmsurv_weibull_linear_k': pmsurv_exponential.save,
+    'pmsurv_weibull_nn': pmsurv_exponential.save,
+    'pmsurv_weibull_nn_k': pmsurv_exponential.save,
+    'rsf': rsf.save,
+    'cox': coxph.save,
+    'deepsurv': deepsurv.save
 }
 
 
@@ -52,7 +70,7 @@ def parse_args():
     parser.add_argument('model', type=str, help='name of the model')
     parser.add_argument('experiment', help='name of the experiment that is being run')
     parser.add_argument('dataset', help='folder containeing dataset (data.csv)')
-    parser.add_argument('--results_dir', default='results', help='directory to save results')
+    parser.add_argument('--results-dir', default='results', help='directory to save results')
     parser.add_argument('--runs', type=int, default=1, help='repetitions of experiments')
     parser.add_argument('--jobs', type=int, default=1, help='nr of parallel processes')
     parser.add_argument('--n-iter', type=int, default=25, help='number of iterations in search')
@@ -60,6 +78,7 @@ def parse_args():
 
 
 def run_experiment(model, dataset, config, train_kwargs):
+    dataset = dataset.dropna(subset=config['features'])
     X, y = preprocess_data_fun[model](dataset, config)
 
     X_train, X_test, y_train, y_test = train_test_split(X, y,
@@ -71,15 +90,16 @@ def run_experiment(model, dataset, config, train_kwargs):
         X_train, X_test = utils.standardize(X_train, X_test, config)
 
     pipeline, parameters, fit_params = train_fun[model](X_train, y_train, config, train_kwargs)
-
+    n_cv = 5
+    n_points = int(train_kwargs['jobs'] / n_cv)
     opt = BayesSearchCV(pipeline, parameters,
                         fit_params=fit_params,
                         n_jobs=train_kwargs['jobs'],
-                        n_points=1,
+                        n_points=n_points if n_points > 1 else 1,
                         n_iter=train_kwargs['n_iter'],
-                        cv=5)
+                        cv=n_cv,
+                        error_score=0)
     opt.fit(X_train, y_train)
-
     metrics = opt.best_estimator_.score(X_test, y_test)
     logger.info("Test metrics: " + str(metrics))
 
@@ -87,6 +107,9 @@ def run_experiment(model, dataset, config, train_kwargs):
 
 
 if __name__ == '__main__':
+    working = os.environ.get("WORKING_DIRECTORY",  os.path.dirname(os.path.abspath(__file__)))
+    os.chdir(working)
+
     logger = logging.getLogger(__name__)
     logging.basicConfig(level=logging.WARNING)
     logger_pymc = logging.getLogger("pymc")
@@ -101,8 +124,10 @@ if __name__ == '__main__':
     logger.info("Loading datasets: " + args.dataset)
     dataset, config = utils.load_data(args.dataset)
 
-    logger.info(f"Running for {args.runs} runs..")
+    logger.info(f"Running for {args.runs} runs...")
     pbar = tqdm(range(args.runs))
+
+    start_time = time.strftime("%y%m%d%H%M", time.localtime())
 
     experiment_dir = os.path.join(args.results_dir, args.experiment)
     os.makedirs(experiment_dir, exist_ok=True)
@@ -113,18 +138,16 @@ if __name__ == '__main__':
     warnings.filterwarnings(action='ignore')
 
     for run in pbar:
-        with nostdout():
+        try:
+            #with nostdout():
             c_index, model, params, data = run_experiment(args.model, dataset, config, train_kwargs)
-        c_indexes.add(c_index)
-        utils.save_results(args.results_dir, args.model, args.dataset, c_index, params)
-        pbar.set_description(f"C-Index {str(c_indexes)}")
+            c_indexes.add(c_index)
+            utils.save_results(experiment_dir, args.model, args.dataset, c_index, params, start_time, run)
+            pbar.set_description(f"C-Index {str(c_indexes)}")
 
-        if c_index >= c_indexes.get_max():
-            data_dump = {'params': params, 'data': data}
-            joblib.dump(data_dump, os.path.join(experiment_dir, f"{args.model}_best.pkl"))
-            try:
-                data_dump = {'params': params, 'data': data}
-                joblib.dump(data_dump, os.path.join(experiment_dir, f"{args.model}_best.pkl"))
-            except:
-                logger.error("Failed to save model, need to retrain...")
-
+            save_fun[args.model](os.path.join(experiment_dir, str(start_time), str(run)), model, c_index, params, data)
+        except:
+            logger.error("Something failed")
+            continue
+    
+    logger.info("Finished") 
