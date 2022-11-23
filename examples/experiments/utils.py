@@ -91,6 +91,18 @@ def save_results(results_dir, model, experiment, cindex, params):
     result_file = os.path.join(results_dir, "results.csv")
     df_results.to_csv(result_file, mode='a', header=not os.path.exists(result_file))
 
+def save_results_retrain(results_dir, model, experiment, cindex, train_type):
+    os.makedirs(results_dir, exist_ok=True)
+    df_results = pd.DataFrame({
+        'experiment': np.repeat(experiment, len(cindex)),
+        'model': np.repeat(model, len(cindex)),
+        'iter': np.arange(0, len(cindex)),
+        'cindex': cindex,
+        'train_type': np.repeat(train_type, len(cindex))
+    })
+    result_file = os.path.join(results_dir, "results.csv")
+    df_results.to_csv(result_file, mode='a', header=not os.path.exists(result_file))
+
 
 class RollingMean:
     def __init__(self):
