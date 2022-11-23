@@ -3,7 +3,7 @@ from sklearn.pipeline import Pipeline
 from pmsurv.models.weibull_linear import WeibullModelLinear
 from skopt.space import Real, Categorical, Integer
 import utils
-
+import arviz as az
 
 def preprocess_data(dataset, config):
     X = dataset[config['features']]
@@ -60,3 +60,32 @@ def train_model_k(X_train, y_train, config, train_kwargs):
     }
 
     return pipeline, parameters, fit_params
+
+
+def get_priors(summary, config):
+    new_priors = WeibullModelLinear._get_default_priors()
+    for feature in config['features']:
+        new_priors[f'lambda_{feature}_mu'] = summary['mean'][f'lambda_{feature}']
+        new_priors[f'lambda_{feature}_sd'] = summary['sd'][f'lambda_{feature}']
+
+        if new_priors['k_coefs']:
+            new_priors[f'k_{feature}_mu'] = summary['mean'][f'k_{feature}']
+            new_priors[f'k_{feature}_sd'] = summary['sd'][f'k_{feature}']
+
+    new_priors[f'lambda_intercept_mu'] = summary['mean'][f'lambda_intercept']
+    new_priors[f'lambda_intercept_sd'] = summary['sd'][f'lambda_intercept']
+
+    new_priors[f'k_intercept_mu'] = summary['mean'][f'k_intercept']
+    new_priors[f'k_intercept_sd'] = summary['sd'][f'k_intercept']
+    return new_priors
+
+
+def retrain_model(X_train, y_train, config, train_kwargs, prior_model=None):
+    model = WeibullModelLinear()
+    if prior_model is None:
+        model.fit(X_train, y_train)
+    else:
+        new_priors = get_priors(az.summary(prior_model.trace), config)
+        model.fit(X_train, y_train, priors=new_priors)
+
+    return model

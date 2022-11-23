@@ -62,28 +62,29 @@ class WeibullModelLinear(WeibullModelBase):
         with model:
             logger.info("Priors: {}".format(str(self.priors)))
             lambda_intercept = pm.Normal("lambda_intercept",
-                                         mu=self.priors['lambda_mu'],
-                                         sigma=self.priors['lambda_sd'])
+                                         mu=self.priors['lambda_mu'] if f'lambda_intercept_mu' not in self.priors else self.priors[f'lambda_intercept_mu'],
+                                         sigma=self.priors['lambda_sd'] if f'lambda_intercept_sd' not in self.priors else self.priors[f'lambda_intercept_sd'])
 
             k_intercept = pm.Normal('k_intercept',
-                                    mu=self.priors['k_mu'],
-                                    sigma=self.priors['k_sd'])
+                                    mu=self.priors['k_mu'] if f'k_intercept_mu' not in self.priors else self.priors[f'k_intercept_mu'],
+                                    sigma=self.priors['k_sd'] if f'k_intercept_mu' not in self.priors else self.priors[f'k_intercept_mu'])
 
             lambda_coefs = []
             for i, cn in enumerate(self.column_names):
-                lambda_coef = pm.Normal(f'lambda_{cn}',
-                                        mu=self.priors['lambda_coefs_mu'],
-                                        sigma=self.priors['lambda_coefs_sd'])
+                feature_name = f'lambda_{cn}'
+                lambda_coef = pm.Normal(feature_name,
+                                        mu=self.priors['lambda_coefs_mu'] if f'lambda_{feature_name}_mu' not in self.priors else self.priors[f'lambda_{feature_name}_mu'],
+                                        sigma=self.priors['lambda_coefs_sd'] if f'lambda_{feature_name}_sd' not in self.priors else self.priors[f'lambda_{feature_name}_sd'])
                 lambda_coefs.append(model_input[:, i] * lambda_coef)
             lambda_det = pm.Deterministic("lambda_det", pm.math.exp(lambda_intercept + sum(lambda_coefs)))
 
             if self.priors['k_coefs']:
-                logger.info('with k')
                 k_coefs = []
                 for i, cn in enumerate(self.column_names):
-                    k_coef = pm.Normal(f'k_{cn}',
-                                            mu=self.priors['k_coefs_mu'],
-                                            sigma=self.priors['k_coefs_sd'])
+                    feature_name = f'k_{cn}'
+                    k_coef = pm.Normal(feature_name,
+                                            mu=self.priors['k_coefs_mu'] if f'k_{feature_name}_mu' not in self.priors else self.priors[f'k_{feature_name}_mu'],
+                                            sigma=self.priors['k_coefs_sd'] if f'k_{feature_name}_sd' not in self.priors else self.priors[f'k_{feature_name}_sd'])
                     k_coefs.append(model_input[:, i] * k_coef)
                 k = pm.math.sum(k_coefs, axis=0)
             else:
