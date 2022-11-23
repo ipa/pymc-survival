@@ -1,0 +1,67 @@
+NAME: 	Heart Disease Survival (WHAS1.DAT)
+SIZE:	481 observations, 14 variables
+
+SOURCE: Hosmer D.W. and Lemeshow, S. (1998) Applied Survival Analysis:
+	Regression Modeling of Time to Event Data,
+	John Wiley and Sons Inc., New York, NY
+
+
+DESCRIPTIVE ABSTRACT:
+
+This data set is described in Table 1.4 of the source text.
+
+
+DISCLAIMER:  This data is also available at the publisher's FTP site:
+             ftp//ftp.wiley.com/public/sci_tech_med/survival
+
+
+LIST OF VARIABLES:
+
+Variable	Description			Codes / Units
+______________________________________________________________________
+
+ID		Identification Code 		1 - 481
+
+AGE		Age (per chart)			years
+
+SEX		Gender				0 = Male
+						1 = Female
+
+CPK		Peak Cardiac Enzyme		International Units (iu)
+
+SHO 		Cardiogenic Shock		0 = No
+		Complications 			1 = Yes
+
+CHF		Left Heart Failure		0 = No
+		Complications 			1 = Yes
+
+MIORD 		MI Order			0 = First
+						1 = Recurrent
+
+MITYPE 		MI Type				1 = Q-wave
+						2 = Not Q-wave
+						3 = Indeterminate
+
+YEAR		Cohort Year			1 = 1975
+						2 = 1978
+						3 = 1981
+						4 = 1984
+						5 = 1986
+						6 = 1988
+
+YRGRP		Grouped Cohort Year		1 = 1975 & 1978
+						2 = 1981 & 1984
+						3 = 1986 & 1988
+
+LENSTAY		Length of Hospital Stay	Days
+		Days in Hospital
+
+DSTAT		Discharge Status		0 = Alive
+		from Hospital			1 = Dead
+
+LENFOL		Total Length of Follow-up	Days
+		from Hospital Admission
+
+FSTAT		Status as of Last		0 = Alive
+		Follow-up			1 = Dead
+________________________________________________________________________
