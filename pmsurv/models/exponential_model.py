@@ -71,13 +71,15 @@ class ExponentialModel(BayesianModel):
             logger.info("Priors: {}".format(str(self.priors)))
 
             lambda_intercept = pm.Normal("lambda_intercept",
-                                         mu=self.priors['lambda_mu'], sigma=self.priors['lambda_sd'])
+                                         mu=self.priors['lambda_mu'] if f'lambda_intercept_mu' not in self.priors else self.priors[f'lambda_intercept_mu'],
+                                         sigma=self.priors['lambda_sd'] if f'lambda_intercept_sd' not in self.priors else self.priors[f'lambda_intercept_sd'])
 
             lambda_coefs = []
             for i, cn in enumerate(self.column_names):
-                lambda_coef = pm.Normal(f'lambda_{cn}',
-                                        mu=self.priors['lambda_coefs_mu'],
-                                        sigma=self.priors['lambda_coefs_sd'])
+                feature_name = f'lambda_{cn}'
+                lambda_coef = pm.Normal(feature_name,
+                                        mu=self.priors['lambda_coefs_mu'] if f'{feature_name}_mu' not in self.priors else self.priors[f'{feature_name}_mu'],
+                                        sigma=self.priors['lambda_coefs_sd'] if f'{feature_name}_sd' not in self.priors else self.priors[f'{feature_name}_sd'])
                 lambda_coefs.append(model_input[:, i] * lambda_coef)
             lambda_det = pm.Deterministic("lambda_det", pm.math.exp(lambda_intercept + sum(lambda_coefs)))
 
