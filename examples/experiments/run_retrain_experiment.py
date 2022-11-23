@@ -103,6 +103,9 @@ def run_experiment(model, dataset, config, train_kwargs):
 
 
 if __name__ == '__main__':
+    working = os.environ.get("WORKING_DIRECTORY",  os.path.dirname(os.path.abspath(__file__)))
+    os.chdir(working)
+
     logger = logging.getLogger(__name__)
     logging.basicConfig(level=logging.WARNING)
     logger_pymc = logging.getLogger("pymc")
