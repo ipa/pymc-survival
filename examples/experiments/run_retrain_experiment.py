@@ -93,7 +93,7 @@ def re_train(partition, model, config, n_partitions):
             models[i] = retrain_fun[model](X_train, y_train, config, train_kwargs, prior_model=None)
         else:
             models[i] = retrain_fun[model](X_train, y_train, config, train_kwargs, prior_model=models[i-1])
-
+        
         score.append(models[i].score(X_test, y_test))
 
     return score
@@ -147,9 +147,12 @@ if __name__ == '__main__':
     proc_args = [{'model': args.model, 'dataset': dataset, 'config': config, 'train_kwargs': train_kwargs} for i in range(args.runs)]
 
     for run in pbar:
-        c_index_full, c_index_retrain = run_experiment(args.model, dataset, config, train_kwargs)
-        utils.save_results_retrain(experiment_dir, args.model, args.dataset, c_index_full, 'full')
-        utils.save_results_retrain(experiment_dir, args.model, args.dataset, c_index_retrain, 'retrain')
-
+        try:
+            c_index_full, c_index_retrain = run_experiment(args.model, dataset, config, train_kwargs)
+            utils.save_results_retrain(experiment_dir, args.model, args.dataset, c_index_full, 'full')
+            utils.save_results_retrain(experiment_dir, args.model, args.dataset, c_index_retrain, 'retrain')
+        except:
+            logger.warn('one iteration failed')
+            raise
     logger.info("Finished")
 

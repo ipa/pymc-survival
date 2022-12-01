@@ -33,7 +33,7 @@ class GaussianProcessModel(BayesianModel):
         }
 
     def __str__(self):
-        str_output = "ExponentialModel \n\r"
+        str_output = "Gaussian Process \n\r"
         str_output += str(self.column_names) + "\r\n"
         str_output += str(self.priors) + "\r\n"
         str_output += str(self.fit_args) + "\r\n"
@@ -108,6 +108,8 @@ class GaussianProcessModel(BayesianModel):
             inference_args = BayesianModel._get_default_inference_args()
             inference_args['draws'] = int(inference_args['draws'] / 8)
             inference_args['tune'] = int(inference_args['tune'] / 8)
+            inference_args['type'] = 'blackjax'
+            #inference_args['type'] = 'map'
 
         if self.cached_model is None:
             print('create from fit')
