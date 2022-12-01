@@ -21,6 +21,7 @@ def train_model(X_train, y_train, config, train_kwargs):
     )
 
     parameters = {
+        'model__n_hidden_layers': Integer(1, 2),
         'selector__k': Integer(1, X_train.shape[1]),
     }
 

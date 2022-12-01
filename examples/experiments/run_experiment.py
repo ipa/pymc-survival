@@ -13,10 +13,11 @@ import utils
 import pmsurv_exponential
 import pmsurv_weibull
 import pmsurv_weibull_nn
+import pmsurv_gp
+import pmsurv_common
 import rsf
 import coxph
 import deepsurv
-
 
 class DummyFile(object):
     def write(self, x): pass
@@ -37,6 +38,7 @@ preprocess_data_fun = {
     'pmsurv_weibull_linear_k': pmsurv_weibull.preprocess_data,
     'pmsurv_weibull_nn': pmsurv_weibull_nn.preprocess_data,
     'pmsurv_weibull_nn_k': pmsurv_weibull_nn.preprocess_data,
+    'pmsurv_gp': pmsurv_common.preprocess_data,
     'rsf': rsf.preprocess_data,
     'cox': coxph.preprocess_data,
     'deepsurv': deepsurv.preprocess_data
@@ -48,6 +50,7 @@ train_fun = {
     'pmsurv_weibull_linear_k': pmsurv_weibull.train_model_k,
     'pmsurv_weibull_nn': pmsurv_weibull_nn.train_model,
     'pmsurv_weibull_nn_k': pmsurv_weibull_nn.train_model,
+    'pmsurv_gp': pmsurv_gp.train_model,
     'rsf': rsf.train_model,
     'cox': coxph.train_model,
     'deepsurv': deepsurv.train_model
@@ -59,6 +62,7 @@ save_fun = {
     'pmsurv_weibull_linear_k': pmsurv_exponential.save,
     'pmsurv_weibull_nn': pmsurv_exponential.save,
     'pmsurv_weibull_nn_k': pmsurv_exponential.save,
+    'pmsurv_gp': pmsurv_common.save,
     'rsf': rsf.save,
     'cox': coxph.save,
     'deepsurv': deepsurv.save
@@ -98,7 +102,7 @@ def run_experiment(model, dataset, config, train_kwargs):
                         n_points=n_points if n_points > 1 else 1,
                         n_iter=train_kwargs['n_iter'],
                         cv=n_cv,
-                        error_score=0)
+                        error_score='raise')
     opt.fit(X_train, y_train)
     metrics = opt.best_estimator_.score(X_test, y_test)
     logger.info("Test metrics: " + str(metrics))
@@ -111,7 +115,7 @@ if __name__ == '__main__':
     os.chdir(working)
 
     logger = logging.getLogger(__name__)
-    logging.basicConfig(level=logging.WARNING)
+    logging.basicConfig(level=logging.INFO)
     logger_pymc = logging.getLogger("pymc")
     logger_pymc.setLevel(logging.ERROR)
     logger_pymc.propagate = False
@@ -148,6 +152,6 @@ if __name__ == '__main__':
             save_fun[args.model](os.path.join(experiment_dir, str(start_time), str(run)), model, c_index, params, data)
         except:
             logger.error("Something failed")
-            continue
+            raise
     
     logger.info("Finished") 

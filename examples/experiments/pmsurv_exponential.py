@@ -45,25 +45,23 @@ def train_model(X_train, y_train, config, train_kwargs):
 def get_priors(summary, config):
     new_priors = ExponentialModel._get_default_priors()
     for feature in config['features']:
-        feature_mu = summary['mean'][f'lambda_{feature}']
-        feature_sd = summary['sd'][f'lambda_{feature}']
-        new_priors[f'lambda_{feature}_mu'] = feature_mu
-        new_priors[f'lambda_{feature}_sd'] = feature_sd 
+        new_priors[f'lambda_{feature}_mu'] = summary['mean'][f'lambda_{feature}']
+        new_priors[f'lambda_{feature}_sd'] = summary['sd'][f'lambda_{feature}']
     
     new_priors[f'lambda_intercept_mu'] = summary['mean'][f'lambda_intercept']
-    new_priors[f'lambda_intercept_sd'] = summary['sd'][f'lambda_intercept'] / 2
+    new_priors[f'lambda_intercept_sd'] = summary['sd'][f'lambda_intercept']
     return new_priors
 
 
 def retrain_model(X_train, y_train, config, train_kwargs, prior_model=None):
     model = ExponentialModel()
-    inference_args = BayesianModel._get_default_inference_args()
-    inference_args['chain_method'] = 'parallel'
+    #inference_args = BayesianModel._get_default_inference_args()
+    #inference_args['chain_method'] = 'parallel'
     if prior_model is None:
-        model.fit(X_train, y_train, inference_args=inference_args)
+        model.fit(X_train, y_train)#, inference_args=inference_args)
     else:
         new_priors = get_priors(az.summary(prior_model.trace), config)
-        model.fit(X_train, y_train, priors=new_priors, inference_args=inference_args)
+        model.fit(X_train, y_train, priors=new_priors)#, inference_args=inference_args)
     
     return model
 
