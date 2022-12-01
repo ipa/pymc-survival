@@ -75,8 +75,6 @@ class ExponentialModel(BayesianModel):
                 lambda_coefs.append(model_input[:, i] * lambda_coef)
             lambda_det = pm.Deterministic("lambda_det", pm.math.exp(lambda_intercept + sum(lambda_coefs)))
 
-            logger.info(lambda_det.shape.eval(), time_censor_.shape.eval(), time_uncensor_.shape.eval())
-
             censor_ = at.eq(censor_, 1)
             y = pm.Exponential("y", at.ones_like(time_uncensor_) / lambda_det[~censor_],
                                observed=time_uncensor_)
@@ -118,7 +116,7 @@ class ExponentialModel(BayesianModel):
                 'time_uncensor': y[y[:, 1] == 0, 0],
                 'censor': y[:, 1].astype(np.int32)
             })
-
+        
         self._inference(inference_args)
 
         return self

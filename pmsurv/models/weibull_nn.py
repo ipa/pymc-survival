@@ -12,7 +12,7 @@ import aesara.tensor as at
 
 
 class WeibullModelNN(WeibullModelBase):
-    def __init__(self):
+    def __init__(self, with_k=False, n_hidden_layers=1):
         super(WeibullModelNN, self).__init__()
         self.column_names = None
         self.max_time = None
@@ -20,7 +20,9 @@ class WeibullModelNN(WeibullModelBase):
         self.fit_args = None
         self.num_training_samples = None
         self.num_pred = None
+        self.n_hidden_layers = n_hidden_layers
         self.layers = []
+        self.with_k = with_k
   
     def __str__(self):
         str_output = ""
@@ -41,19 +43,14 @@ class WeibullModelNN(WeibullModelBase):
             'coefs_sd': 0.25
         }
 
-    @staticmethod
-    def _get_default_inference_args():
-        return {
-            'num_samples': 1000,
-            'warmup_ratio': 1,
-            'num_chains': 1
-        }
 
     def create_model(self, X=None, y=None, priors=None):
         if self.priors is None:
             self.priors = priors
         if self.priors is None:
             self.priors = WeibullModelNN._get_default_priors()
+        self.priors['n_hidden_layers'] = [self.num_pred for i in range(self.n_hidden_layers)]
+        self.priors['k_coefs'] = self.with_k
 
         print(self.priors['n_hidden_layers'])
         n_hidden_layers = copy.deepcopy(self.priors['n_hidden_layers'])

@@ -42,8 +42,14 @@ class BayesianModel(BaseEstimator):
             Number of samples to draw from ADVI approximation after it has been fit;
             not used if inference_type != 'advi'
         """
-
-        self.__nuts_inference(inference_args)
+        if 'type' not in inference_args:
+            self.__nuts_inference(inference_args)
+        elif inference_args['type'] == 'nuts' or inference_args['type'] == 'blackjax':
+            self.__nuts_inference(inference_args)
+        elif inference_args['type'] == 'map':
+            logger.info('fit with MAP')
+            with self.cached_model:
+                self.trace = pm.find_MAP()
 
     def __nuts_inference(self, inference_args):
         """

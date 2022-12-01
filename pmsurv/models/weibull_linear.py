@@ -67,14 +67,14 @@ class WeibullModelLinear(WeibullModelBase):
 
             k_intercept = pm.Normal('k_intercept',
                                     mu=self.priors['k_mu'] if f'k_intercept_mu' not in self.priors else self.priors[f'k_intercept_mu'],
-                                    sigma=self.priors['k_sd'] if f'k_intercept_mu' not in self.priors else self.priors[f'k_intercept_mu'])
+                                    sigma=self.priors['k_sd'] if f'k_intercept_sd' not in self.priors else self.priors[f'k_intercept_sd'])
 
             lambda_coefs = []
             for i, cn in enumerate(self.column_names):
                 feature_name = f'lambda_{cn}'
                 lambda_coef = pm.Normal(feature_name,
-                                        mu=self.priors['lambda_coefs_mu'] if f'lambda_{feature_name}_mu' not in self.priors else self.priors[f'lambda_{feature_name}_mu'],
-                                        sigma=self.priors['lambda_coefs_sd'] if f'lambda_{feature_name}_sd' not in self.priors else self.priors[f'lambda_{feature_name}_sd'])
+                                        mu=self.priors['lambda_coefs_mu'] if f'{feature_name}_mu' not in self.priors else self.priors[f'{feature_name}_mu'],
+                                        sigma=self.priors['lambda_coefs_sd'] if f'{feature_name}_sd' not in self.priors else self.priors[f'{feature_name}_sd'])
                 lambda_coefs.append(model_input[:, i] * lambda_coef)
             lambda_det = pm.Deterministic("lambda_det", pm.math.exp(lambda_intercept + sum(lambda_coefs)))
 
@@ -83,8 +83,8 @@ class WeibullModelLinear(WeibullModelBase):
                 for i, cn in enumerate(self.column_names):
                     feature_name = f'k_{cn}'
                     k_coef = pm.Normal(feature_name,
-                                            mu=self.priors['k_coefs_mu'] if f'k_{feature_name}_mu' not in self.priors else self.priors[f'k_{feature_name}_mu'],
-                                            sigma=self.priors['k_coefs_sd'] if f'k_{feature_name}_sd' not in self.priors else self.priors[f'k_{feature_name}_sd'])
+                                            mu=self.priors['k_coefs_mu'] if f'{feature_name}_mu' not in self.priors else self.priors[f'{feature_name}_mu'],
+                                            sigma=self.priors['k_coefs_sd'] if f'{feature_name}_sd' not in self.priors else self.priors[f'{feature_name}_sd'])
                     k_coefs.append(model_input[:, i] * k_coef)
                 k = pm.math.sum(k_coefs, axis=0)
             else:
