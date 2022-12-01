@@ -73,8 +73,7 @@ def full_train(partition, model, config, n_partitions):
             
         models_fulltrain[i] = retrain_fun[model](X_train, y_train, config, train_kwargs)
         score_fulltrain.append(models_fulltrain[i].score(X_test, y_test))
-        logger.info(f'iter {i}: {score_fulltrain[i-1]}')
-    
+
     return score_fulltrain
 
 
@@ -85,7 +84,7 @@ def re_train(partition, model, config, n_partitions):
     for i in range(1, n_partitions):
         X_train, y_train = preprocess_data_fun[model](partition[i], config)
         X_test, y_test = preprocess_data_fun[model](partition[i+1], config)
-        logger.info(f'shape {X_train.shape}, {X_test.shape}')
+        logger.debug(f'shape {X_train.shape}, {X_test.shape}')
         if config['preprocessing']['standardize']:
             logger.info("Standardize data")
             X_train, X_test = utils.standardize(X_train, X_test, config)
@@ -106,14 +105,12 @@ def run_experiment(model, dataset, config, train_kwargs):
     if config['partition']['type'] == 'var':
         partition_idx = dataset['partition'].values
     else:
-        print("do random")
+        logger.info("do random")
         partition_idx = np.random.randint(train_kwargs['n_partitions'], size=len(dataset)) + 1
-    #print(partition_idx)
 
     for i in range(1, train_kwargs['n_partitions']+1):
         partition[i] = dataset.iloc[partition_idx==i, :]
         partition[100+i] = dataset.iloc[partition_idx<=i, :]
-    #with nostdout():
 
     score_retrain = re_train(partition, model, config, train_kwargs['n_partitions'])
     score_fulltrain = full_train(partition, model, config, train_kwargs['n_partitions'])
@@ -124,7 +121,7 @@ if __name__ == '__main__':
     working = os.environ.get("WORKING_DIRECTORY",  os.path.dirname(os.path.abspath(__file__)))
     os.chdir(working)
 
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.WARNING)
     logger_pymc = logging.getLogger("pymc")
     logger_pymc.setLevel(logging.ERROR)
     logger_pymc.propagate = False

@@ -1,4 +1,5 @@
 import os
+import logging
 import joblib
 import yaml
 import lifelines
@@ -15,6 +16,7 @@ import numpy as np
 from skopt.space import Real, Categorical, Integer
 import utils
 
+logger = logging.getLogger(__name__)
 
 class PyCoxWrapper(BaseEstimator):
 
@@ -28,39 +30,35 @@ class PyCoxWrapper(BaseEstimator):
     def fit(self, X, y, batch_size=512, epochs=200):
         X = X.astype(np.float32)
         y = y.astype(np.float32)
-        print(X.dtype, y.dtype)
         y = (y[:, 0], y[:, 1])
 
         # self.hidden_units = [X.shape[1], X.shape[1]]
         #if batch_size > (X.shape[0] / 2):
         #    batch_size = 128
         if self.cox is None:
-            print('learn from scratch')
+            logger.info('learn from scratch')
             self.net = tt.practical.MLPVanilla(in_features=X.shape[1],
                                       num_nodes=[self.hidden_units],
                                       out_features=1,
                                       batch_norm=True,
                                       dropout=self.dropout,
                                       output_bias=False)
-            self.cox = CoxPH(self.net, tt.optim.Adam(1e-2))
+            self.cox = CoxPH(self.net, tt.optim.Adam(1e-2), )
             self.cox.optimizer.set_lr(self.lr)
 
         log = self.cox.fit(X, y, batch_size, epochs,
                            verbose=False)
         _ = self.cox.compute_baseline_hazards()
-
         return self
 
     def predict(self, X):
-        X = X.astype(np.float32)
+        X = X.values.astype(np.float32)
         surv = self.cox.predict_surv_df(X).T.values
         return surv
 
     def score(self, X, y):
         y_pred = self.predict(X.astype(np.float32))
         y_pred = np.median(y_pred, axis=1)
-        # print(min(y[:, 0]), max(y[:, 0]), min(y_pred), max(y_pred))
-        # print(y_pred)
         c_index = lifelines.utils.concordance_index(y[:, 0], y_pred, y[:, 1])
         return c_index
 
@@ -99,7 +97,7 @@ def retrain_model(X_train, y_train, config, train_kwargs, prior_model=None):
     if prior_model is None:
         model = PyCoxWrapper(hidden_units=X_train.shape[1])
     else:
-        model = copy.deepcopy(prior_model)
+        model = copy.copy(prior_model)
     
     model.fit(X_train.values, y_train)
     return model
