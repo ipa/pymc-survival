@@ -1,2 +1,7 @@
 renv/
 .Rprofile
+out/
+*.pdf
+*.html
+data/
+.Rhistory
