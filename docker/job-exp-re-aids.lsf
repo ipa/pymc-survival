@@ -1,36 +1,13 @@
-#BSUB -W 6:00
+#BSUB -W 24:00
 #BSUB -o /rsrch3/scratch/int_rad_rsch/ipaolucci/logs/pymc-survival
 #BSUB -e /rsrch3/scratch/int_rad_rsch/ipaolucci/logs/pymc-survival
 #BSUB -cwd /rsrch3/home/int_rad_rsch/ipaolucci/src/pymc-survival/docker
 #BSUB -q medium
 #BSUB -n 2
-#BSUB -M 8
+#BSUB -M 8 
 #BSUB -R rusage[mem=8]
 #BSUB -u ipaolucci@mdanderson.org
 #BSUB -J pmsurv_exp_re_aids
-## explanation of arguments above:
-## -W run-time (wall clock) in hour:min  (required)
-## -o use this or output (stdout) will be sent via email!
-## -e use this or errors (stderr) will be sent via email!
-## -cwd set the current working directory.
-## -q queue name (required) 
-## -n number of processors required (28=entire node)
-## -M memory limit in GB (required). 
-## -R memory reserved in GB (default/minimum is 1GB).
-## -B send email to the user when the job begins (optional).
-## -N send email to the user when the job ends (optional).
-## -u send email to the specified address (required if -B and -N are used).
-##    It is recommended to always include your MD Anderson email address.
-## -J arbitrary job name, letters, dashes, underscores only - no spaces!
-##
-## Memory is specified as GB
-##
-## This script requests a wallclock of 1 hour, 12 CPUs, and 17G of memory, in the short queue
-
-## To submit:  bsub < example.lsf
-
-## All commands below should be valid linux commands
-#
 
 module load singularity/3.7.0
 
@@ -40,10 +17,10 @@ singularity exec \
     --env MPLCONFIGDIR=/tmp/.matplotlib \
     --no-home \
     --bind $HOME/src/pymc-survival:/home/pymc/src \
-    modelling_pymc4-jupyter-latest.sif \
+    modelling_pymc4-cuda11.2.sif \
     /bin/bash -c " \
         export AESARA_FLAGS="base_compiledir=/tmp/.aesara"
-        python /home/pymc/src/examples/experiments/run_retrain_experiment.py pmsurv_exponential pm_exp_aids data/aids --runs 100 --n-partitions 10 \
+        python3 /home/pymc/src/examples/experiments/run_retrain_experiment.py pmsurv_exponential pm_exp_aids data/aids --runs 75 --n-partitions 10 \
     "
 
 
