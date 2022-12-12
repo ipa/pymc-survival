@@ -61,6 +61,7 @@ def parse_args():
     parser.add_argument('dataset', help='folder containeing dataset (data.csv)')
     parser.add_argument('--results_dir', default='results_retrain', help='directory to save results')
     parser.add_argument('--runs', type=int, default=1, help='repetitions of experiments')
+    parser.add_argument('--start-run', type=int, default=0)
     parser.add_argument('--jobs', type=int, default=1, help='nr of parallel processes')
     parser.add_argument('--n-partitions', type=int, default=25, help='number of iterations in search')
     return parser.parse_args()
@@ -151,8 +152,8 @@ if __name__ == '__main__':
     logger.info("Loading datasets: " + args.dataset)
     dataset, config = utils.load_data(args.dataset)
 
-    logger.info(f"Running for {args.runs} runs..")
-    pbar = tqdm(range(0, args.runs))
+    logger.info(f"Running for {args.start_run} to {args.runs} runs..")
+    pbar = tqdm(range(args.start_run, args.runs))
 
     experiment_dir = os.path.join(args.results_dir, args.experiment)
     os.makedirs(experiment_dir, exist_ok=True)
