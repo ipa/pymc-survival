@@ -48,6 +48,7 @@ class TestWeibullNN(unittest.TestCase):
         print(X.shape, y.shape)
         fit_args = {'draws': 1000, 'tune': 500, 'target_accept': 0.85, 'chains': 2, 'cores': 1,
                     'return_inferencedata': True}
+        # fit_args = {'draws': 1000, 'tune': 500, 'chains': 2, 'type': 'blackjax'}
         wb_model = WeibullModelNN()
         wb_model.fit(X, y, inference_args=fit_args)
 
