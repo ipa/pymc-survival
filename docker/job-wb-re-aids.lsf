@@ -1,8 +1,8 @@
-#BSUB -W 18:00
+#BSUB -W 3:00
 #BSUB -o /rsrch3/scratch/int_rad_rsch/ipaolucci/logs/pymc-survival
 #BSUB -e /rsrch3/scratch/int_rad_rsch/ipaolucci/logs/pymc-survival
 #BSUB -cwd /rsrch3/home/int_rad_rsch/ipaolucci/src/pymc-survival/docker
-#BSUB -q medium
+#BSUB -q short
 #BSUB -n 2
 #BSUB -M 16
 #BSUB -R rusage[mem=16]
@@ -21,7 +21,7 @@ singularity exec \
     modelling_pymc4-cuda11.2.sif \
     /bin/bash -c " \
         export AESARA_FLAGS="base_compiledir=/tmp/.aesara"
-        python3 /home/pymc/src/examples/experiments/run_retrain_experiment.py pmsurv_weibull_linear pm_wb_aids data/aids --runs 75 --n-partitions 10 \
+        python3 /home/pymc/src/examples/experiments/run_retrain_experiment.py pmsurv_weibull_linear pm_wb_aids data/aids --runs 75 --start-run 72 --n-partitions 10 \
     "
 
 

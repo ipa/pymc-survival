@@ -20,7 +20,7 @@ singularity exec \
     modelling_pymc4-cuda11.2.sif \
     /bin/bash -c " \
         export AESARA_FLAGS="base_compiledir=/tmp/.aesara"
-        python3 /home/pymc/src/examples/experiments/run_retrain_experiment.py pmsurv_exponential pm_exp_aids data/aids --runs 75 --n-partitions 10 \
+        python3 /home/pymc/src/examples/experiments/run_retrain_experiment.py pmsurv_exponential pm_exp_aids data/aids --runs 75 --start-run 43 --n-partitions 10 \
     "
 
 

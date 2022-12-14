@@ -1,8 +1,8 @@
-#BSUB -W 3:00
+#BSUB -W 6:00
 #BSUB -o /rsrch3/scratch/int_rad_rsch/ipaolucci/logs/pymc-survival
 #BSUB -e /rsrch3/scratch/int_rad_rsch/ipaolucci/logs/pymc-survival
 #BSUB -cwd /rsrch3/home/int_rad_rsch/ipaolucci/src/pymc-survival/docker
-#BSUB -q short
+#BSUB -q medium
 #BSUB -n 2
 #BSUB -M 8
 #BSUB -R rusage[mem=8]
