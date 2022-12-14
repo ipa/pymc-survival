@@ -3,11 +3,11 @@
 #BSUB -e /rsrch3/scratch/int_rad_rsch/ipaolucci/logs/pymc-survival
 #BSUB -cwd /rsrch3/home/int_rad_rsch/ipaolucci/src/pymc-survival/docker
 #BSUB -q medium
-#BSUB -n 2
-#BSUB -M 8
-#BSUB -R rusage[mem=8]
+#BSUB -n 20
+#BSUB -M 20
+#BSUB -R rusage[mem=20]
 #BSUB -u ipaolucci@mdanderson.org
-#BSUB -J pmsurv_exp_re_gbcs 
+#BSUB -J pmsurv_wb_nn_veteran
 
 module load singularity/3.7.0
 
@@ -16,10 +16,10 @@ singularity exec \
     --env PYTHONPATH=/home/pymc/src \
     --no-home \
     --bind $HOME/src/pymc-survival:/home/pymc/src \
-    modelling_pymc4-cuda11.2.sif \
+    modelling_pymc4-jupyter-latest.sif \
     /bin/bash -c " \
         export AESARA_FLAGS="base_compiledir=/tmp/.aesara"
-        python3 /home/pymc/src/examples/experiments/run_retrain_experiment.py pmsurv_exponential pm_exp_gbcs data/gbcs --runs 75 --n-partitions 6 \
+        python /home/pymc/src/examples/experiments/run_experiment.py pmsurv_weibull_nn pm_nnwb_veteran data/veteran --runs 100 --jobs 10 --n-iter 15 \
     "
 
 

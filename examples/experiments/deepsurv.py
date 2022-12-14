@@ -58,7 +58,8 @@ class PyCoxWrapper(BaseEstimator):
 
     def score(self, X, y):
         y_pred = self.predict(X.astype(np.float32))
-        y_pred = np.median(y_pred, axis=1)
+        y_pred = np.nanmedian(y_pred, axis=1)
+        #print(y_pred)
         c_index = lifelines.utils.concordance_index(y[:, 0], y_pred, y[:, 1])
         return c_index
 

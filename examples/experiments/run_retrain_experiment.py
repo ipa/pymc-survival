@@ -15,6 +15,7 @@ import numpy as np
 import multiprocessing
 #from pqdm.processes import pqdm
 import deepsurv
+import pmsurv_common
 
 #TODO: https://docs.pymc.io/en/v3/pymc-examples/examples/pymc3_howto/updating_priors.html
 
@@ -33,6 +34,12 @@ retrain_fun = {
     'pmsurv_exponential': pmsurv_exponential.retrain_model,
     'pmsurv_weibull_linear': pmsurv_weibull.retrain_model,
     'deepsurv': deepsurv.retrain_model
+}
+
+save_fun = {
+    'pmsurv_exponential': pmsurv_common.save,
+    'pmsurv_weibull_linear': pmsurv_common.save,
+    'deepsurv': deepsurv.save
 }
 
 class DummyFile(object):
@@ -54,15 +61,17 @@ def parse_args():
     parser.add_argument('dataset', help='folder containeing dataset (data.csv)')
     parser.add_argument('--results_dir', default='results_retrain', help='directory to save results')
     parser.add_argument('--runs', type=int, default=1, help='repetitions of experiments')
+    parser.add_argument('--start-run', type=int, default=0)
     parser.add_argument('--jobs', type=int, default=1, help='nr of parallel processes')
     parser.add_argument('--n-partitions', type=int, default=25, help='number of iterations in search')
     return parser.parse_args()
 
 
-def full_train(partition, model, config, n_partitions):
+def full_train(partition, model, config, kwargs):
     logger.info("full train")
     models_fulltrain = {}
     score_fulltrain = []
+    n_partitions = kwargs['n_partitions']
     for i in range(1, n_partitions):
         X_train, y_train = preprocess_data_fun[model](partition[100+i], config)
         X_test, y_test = preprocess_data_fun[model](partition[i+1], config)
@@ -72,15 +81,20 @@ def full_train(partition, model, config, n_partitions):
             X_train, X_test = utils.standardize(X_train, X_test, config)
             
         models_fulltrain[i] = retrain_fun[model](X_train, y_train, config, train_kwargs)
-        score_fulltrain.append(models_fulltrain[i].score(X_test, y_test))
+        score_ = models_fulltrain[i].score(X_test, y_test)
+        score_fulltrain.append(score_)
+        y_predicted = models_fulltrain[i].predict(X_test)
+        save_data = (X_train, X_test, y_train, y_test, y_predicted)
+        save_fun[model](os.path.join(kwargs['experiment_dir'], 'full', str(i)), {'model': models_fulltrain[i]}, score_, {}, save_data)
 
     return score_fulltrain
 
 
-def re_train(partition, model, config, n_partitions):
+def re_train(partition, model, config, kwargs):
     logger.info("re train")
     models = {}
-    score = []
+    score_retrain = []
+    n_partitions = kwargs['n_partitions']
     for i in range(1, n_partitions):
         X_train, y_train = preprocess_data_fun[model](partition[i], config)
         X_test, y_test = preprocess_data_fun[model](partition[i+1], config)
@@ -93,10 +107,14 @@ def re_train(partition, model, config, n_partitions):
             models[i] = retrain_fun[model](X_train, y_train, config, train_kwargs, prior_model=None)
         else:
             models[i] = retrain_fun[model](X_train, y_train, config, train_kwargs, prior_model=models[i-1])
+        
+        score_ = models[i].score(X_test, y_test)
+        score_retrain.append(score_)
+        y_predicted = models[i].predict(X_test)
+        save_data = (X_train, X_test, y_train, y_test, y_predicted)
+        save_fun[model](os.path.join(kwargs['experiment_dir'], 'retrain',  str(i)), {'model': models[i]}, score_, {}, save_data)
 
-        score.append(models[i].score(X_test, y_test))
-
-    return score
+    return score_retrain
 
 
 def run_experiment(model, dataset, config, train_kwargs):
@@ -112,8 +130,8 @@ def run_experiment(model, dataset, config, train_kwargs):
         partition[i] = dataset.iloc[partition_idx==i, :]
         partition[100+i] = dataset.iloc[partition_idx<=i, :]
 
-    score_retrain = re_train(partition, model, config, train_kwargs['n_partitions'])
-    score_fulltrain = full_train(partition, model, config, train_kwargs['n_partitions'])
+    score_retrain = re_train(partition, model, config, train_kwargs)
+    score_fulltrain = full_train(partition, model, config, train_kwargs)
     return score_fulltrain, score_retrain
 
 
@@ -134,8 +152,8 @@ if __name__ == '__main__':
     logger.info("Loading datasets: " + args.dataset)
     dataset, config = utils.load_data(args.dataset)
 
-    logger.info(f"Running for {args.runs} runs..")
-    pbar = tqdm(range(args.runs))
+    logger.info(f"Running for {args.start_run} to {args.runs} runs..")
+    pbar = tqdm(range(args.start_run, args.runs))
 
     experiment_dir = os.path.join(args.results_dir, args.experiment)
     os.makedirs(experiment_dir, exist_ok=True)
@@ -147,9 +165,13 @@ if __name__ == '__main__':
     proc_args = [{'model': args.model, 'dataset': dataset, 'config': config, 'train_kwargs': train_kwargs} for i in range(args.runs)]
 
     for run in pbar:
-        c_index_full, c_index_retrain = run_experiment(args.model, dataset, config, train_kwargs)
-        utils.save_results_retrain(experiment_dir, args.model, args.dataset, c_index_full, 'full')
-        utils.save_results_retrain(experiment_dir, args.model, args.dataset, c_index_retrain, 'retrain')
-
+        try:
+            train_kwargs['experiment_dir'] = os.path.join(experiment_dir, str(run))
+            c_index_full, c_index_retrain = run_experiment(args.model, dataset, config, train_kwargs)
+            utils.save_results_retrain(experiment_dir, args.model, args.dataset, c_index_full, 'full')
+            utils.save_results_retrain(experiment_dir, args.model, args.dataset, c_index_retrain, 'retrain')
+        except:
+            logger.warn('one iteration failed')
+            raise
     logger.info("Finished")
 

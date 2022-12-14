@@ -14,7 +14,8 @@ def save(save_dir, model, c_index, params, data):
     os.makedirs(save_dir, exist_ok=True)
 
     model['model'].save(os.path.join(save_dir, "model.yaml"))
-    joblib.dump(model['selector'],  os.path.join(save_dir, "selector.pkl"))
+    if 'selector' in model:
+        joblib.dump(model['selector'],  os.path.join(save_dir, "selector.pkl"))
     joblib.dump(data, os.path.join(save_dir, "data.pkl"))
     metadata = {
         'c_index': float(c_index),
