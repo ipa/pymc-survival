@@ -1,11 +1,7 @@
 ---
 title: "Bayesian parametric models for survival prediction in medical applications"
 subtitle: "Retraining using Bayes rule"
-# author: "Iwan Paolucci, PhD^[Department of Interventional Radiology, The University of Texas MD Anderson Cancer Center, Houston, TX, USA]"
 date: "12-02-2022"
-# date-format: short
-# author: Iwan Paolucci, PhD
-# affiliation: MD Anderson Cancer Center, Department of Interventional Radiology, Houston, TX, USA
 author:
   - name: Iwan Paolucci, PhD
     affiliation: "MD Anderson Cancer Center, Department of Interventional Radiology, Houston, TX, USA"
@@ -50,14 +46,14 @@ library(stringr)
 \newpage
 
 ```{r load-data, include=FALSE}
-redownload <- FALSE
+redownload <- TRUE
 
 if (redownload) {
   src_folder <- 'U:/src/pymc-survival/examples/experiments/results_retrain'
-  numbering <- c(rep(seq(1, 100), each=18),
-                     rep(seq(1, 100), each=10),
-                     rep(seq(1, 100), each=10),
-                     rep(seq(1, 100), each=10))
+  numbering <- c(rep(seq(1, 75), each=18),
+                     rep(seq(1, 75), each=10),
+                     rep(seq(1, 75), each=10),
+                     rep(seq(1, 75), each=10))
   length(numbering)
   
   data.exp <- rbind(read.csv(paste(src_folder, 'pm_exp_aids/results.csv', sep = '/')),
@@ -95,7 +91,7 @@ if (redownload) {
 
 ```{r load-data-2}
 data <- read.csv('data/results_retraining.csv') %>%
-  filter(run <= 74)
+  filter(run <= 75)
 ```
 
 ## Preprocess data
