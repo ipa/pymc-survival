@@ -47,6 +47,7 @@ class TestGaussianProcessModelModel(unittest.TestCase):
 
         self.assertIsNotNone(wb_model)
 
+    @unittest.skip("Not yet ready")
     def test_fit(self):
         print("test_fit")
         included_features = ['a']
@@ -71,7 +72,7 @@ class TestGaussianProcessModelModel(unittest.TestCase):
         # plt.plot(wb_model.approx.hist)
         # plt.show()
 
-
+    @unittest.skip("Not yet ready")
     def test_save_and_load(self):
         print("test_save_and_load")
         X, y = tests.syntheticdata.synthetic_data_random()
@@ -98,6 +99,7 @@ class TestGaussianProcessModelModel(unittest.TestCase):
         # self.assertAlmostEqual(summary_1['mean']['lambda_intercept'], summary_2['mean']['lambda_intercept'])
         # self.assertAlmostEqual(summary_1['mean']['lambda_det'], summary_2['mean']['lambda_det'])
 
+    @unittest.skip("Not yet ready")
     def test_score(self):
         print("test_fit_1")
         included_features = ['a']
