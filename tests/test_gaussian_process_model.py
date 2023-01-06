@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 
 from pmsurv.models.gaussian_process import GaussianProcessModel
-import tests.data
+import tests.syntheticdata
 
 warnings.simplefilter("ignore")
 
@@ -34,7 +34,7 @@ class TestGaussianProcessModelModel(unittest.TestCase):
         lam_ctrl = 1
         lam_trt = 2.5
         k = 1
-        X, y = tests.data.synthetic_data_weibull(lam_ctrl=lam_ctrl, lam_trt=lam_trt, k=k)
+        X, y = tests.syntheticdata.synthetic_data_weibull(lam_ctrl=lam_ctrl, lam_trt=lam_trt, k=k)
         y[:, 1] = 1 - y[:, 1]  # inverse
 
         wb_model = GaussianProcessModel()
@@ -53,7 +53,7 @@ class TestGaussianProcessModelModel(unittest.TestCase):
         lam_ctrl = 1
         lam_trt = 2.5
         k = 1
-        X, y = tests.data.synthetic_data_weibull(lam_ctrl=lam_ctrl, lam_trt=lam_trt, k=k)
+        X, y = tests.syntheticdata.synthetic_data_weibull(lam_ctrl=lam_ctrl, lam_trt=lam_trt, k=k)
         y[:, 1] = 1 - y[:, 1]  # inverse
         print(X.shape, y.shape)
         fit_args = {'draws': 100, 'tune': 50, 'target_accept': 0.8, 'chains': 2, 'cores': 1,
@@ -74,7 +74,7 @@ class TestGaussianProcessModelModel(unittest.TestCase):
 
     def test_save_and_load(self):
         print("test_save_and_load")
-        X, y = tests.data.synthetic_data_random()
+        X, y = tests.syntheticdata.synthetic_data_random()
         print(X.shape, y.shape)
         fit_args = {'draws': 200, 'tune': 100, 'chains': 2, 'cores': 1, 'return_inferencedata': True, 'type': 'blackjax'}
         wb_model = GaussianProcessModel()
@@ -101,7 +101,7 @@ class TestGaussianProcessModelModel(unittest.TestCase):
     def test_score(self):
         print("test_fit_1")
         included_features = ['a']
-        X, y = tests.data.synthetic_data_weibull(lam_ctrl=1, lam_trt=2.5, k=1)
+        X, y = tests.syntheticdata.synthetic_data_weibull(lam_ctrl=1, lam_trt=2.5, k=1)
         y[:, 1] = 1 - y[:, 1]  # inverse
         print(X.shape, y.shape)
         fit_args = {'draws': 1000, 'tune': 500, 'chains': 2, 'cores': 1, 'return_inferencedata': True,

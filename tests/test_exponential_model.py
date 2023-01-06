@@ -8,7 +8,7 @@ import pandas as pd
 from pathlib import Path
 
 from pmsurv.models.exponential_model import ExponentialModel
-import data
+import tests.syntheticdata
 
 warnings.simplefilter("ignore")
 
@@ -33,7 +33,7 @@ class TestExponentialModel(unittest.TestCase):
         lam_ctrl = 1
         lam_trt = 2.5
         k = 1
-        X, y = data.synthetic_data_weibull(lam_ctrl=lam_ctrl, lam_trt=lam_trt, k=k)
+        X, y = tests.syntheticdata.synthetic_data_weibull(lam_ctrl=lam_ctrl, lam_trt=lam_trt, k=k)
         y[:, 1] = 1 - y[:, 1]  # inverse
 
         wb_model = ExponentialModel()
@@ -52,7 +52,7 @@ class TestExponentialModel(unittest.TestCase):
         lam_ctrl = 1
         lam_trt = 2.5
         k = 1
-        X, y = data.synthetic_data_weibull(lam_ctrl=lam_ctrl, lam_trt=lam_trt, k=k)
+        X, y = tests.syntheticdata.synthetic_data_weibull(lam_ctrl=lam_ctrl, lam_trt=lam_trt, k=k)
         y[:, 1] = 1 - y[:, 1]  # inverse
         print(X.shape, y.shape)
         fit_args = {'draws': 1000, 'tune': 500, 'target_accept': 0.85, 'chains': 2, 'cores': 1,
@@ -69,7 +69,7 @@ class TestExponentialModel(unittest.TestCase):
         print("test_fit_intercept_only")
         lam = 1.5
         k = 1
-        X, y = data.synthetic_data_intercept_only(lam=lam, k=k)
+        X, y = tests.syntheticdata.synthetic_data_intercept_only(lam=lam, k=k)
         y[:, 1] = 1 - y[:, 1]  # inverse
 
         fit_args = {'draws': 1000, 'tune': 500, 'chains': 2, 'cores': 1, 'return_inferencedata': True}
@@ -82,7 +82,7 @@ class TestExponentialModel(unittest.TestCase):
 
     def test_save_and_load(self):
         print("test_save_and_load")
-        X, y = data.synthetic_data_random()
+        X, y = tests.syntheticdata.synthetic_data_random()
         print(X.shape, y.shape)
         fit_args = {'draws': 2000, 'tune': 1000, 'chains': 2, 'cores': 1, 'return_inferencedata': True}
         wb_model = ExponentialModel()
@@ -110,7 +110,7 @@ class TestExponentialModel(unittest.TestCase):
     def test_score(self):
         print("test_fit_1")
         included_features = ['a']
-        X, y = data.synthetic_data_weibull(lam_ctrl=1, lam_trt=2.5, k=1)
+        X, y = tests.syntheticdata.synthetic_data_weibull(lam_ctrl=1, lam_trt=2.5, k=1)
         y[:, 1] = 1 - y[:, 1]  # inverse
         print(X.shape, y.shape)
         fit_args = {'draws': 1000, 'tune': 1000, 'chains': 2, 'cores': 1, 'return_inferencedata': True,
