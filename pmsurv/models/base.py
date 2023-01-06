@@ -138,7 +138,6 @@ class BayesianModel(BaseEstimator):
         az.to_netcdf(self.trace, trace_file)
 
         self.params['custom_params'] = custom_params
-        self.params['trace_file'] = trace_file
         with open(file, 'w') as f:
             yaml.dump(self.params, f)
 
@@ -164,7 +163,8 @@ class BayesianModel(BaseEstimator):
         with open(file, 'r') as f:
             self.params = yaml.safe_load(f)
 
-        self.trace = az.from_netcdf(self.params['trace_file'])
+        trace_file = f"{file}.netcdf"
+        self.trace = az.from_netcdf(trace_file)
         custom_params = self.params['custom_params']
         return custom_params
 
