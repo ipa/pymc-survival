@@ -203,6 +203,53 @@ res.tbl %>% as_gt() %>% gtsave(filename = 'out/results_bayes.rtf')
 
 ```
 
+
+```{r plt-equiv-test, fig.width=7, fig.asp=0.9}
+
+
+comparisons <- data.frame('Model'=character(),
+                          'Experiment'=character(),
+                          'HDI_low'=double(),
+                          'HDI_high'=double(),
+                          'ROPE_percentage'=double(),
+                          'ROPE_equivalence'=character())
+
+for (idx_experiment in levels(data$experiment_lbl)){
+  for (idx_model in levels(data$model_lbl)){
+    model <- stan_glm(cindex_diff ~ 1 , 
+                  data = data %>% 
+                    filter(experiment_lbl == idx_experiment & model_lbl == idx_model),
+                  refresh = 0,
+                  algorithm = 'sampling')
+    
+    et <- equivalence_test(model, 
+                 range = c(-0.05, +0.05),
+                 ci = 1 - 0.05 / 15
+                 )
+    comparisons <- rbind(comparisons, data.frame(
+      'Model'=idx_model,
+      'Experiment'=idx_experiment,
+      'HDI_mean'=signif(model$coefficients['(Intercept)'], digits = 2),
+      'HDI_low'=signif(et$HDI_low, digits = 2),
+      'HDI_high'=signif(et$HDI_high, digits = 2),
+      'ROPE_percentage'=round(et$ROPE_Percentage * 100, 1),
+      'ROPE_equivalence'=et$ROPE_Equivalence
+    ))
+  }
+}
+
+ggscatter(data = comparisons, x = 'Model', y = 'HDI_mean',
+          facet.by = 'Experiment',
+          color = 'Model', palette = 'lancet', ylab = 'C-Index') +
+  geom_hline(yintercept = c(0.01), color = 'black', linetype = 'dashed') +
+  geom_errorbar(data = comparisons,
+                  aes(color = Model, ymin = HDI_low, ymax = HDI_high),
+                  width = 0.25) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5))
+
+
+```
+
 \newpage
 
 ### Frequentist

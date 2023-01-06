@@ -7,3 +7,4 @@ data/
 .Rhistory
 results_posterior_files/
 results_posteriors_files/
+*.tex
