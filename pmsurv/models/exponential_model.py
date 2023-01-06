@@ -11,7 +11,6 @@ import pymc as pm
 from pmsurv.exc import PyMCModelsError
 from pmsurv.models.base import BayesianModel
 import pmsurv.utils
-import aesara.tensor as at
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +75,7 @@ class ExponentialModel(BayesianModel):
             lambda_det = pm.Deterministic("lambda_det", pm.math.exp(lambda_intercept + sum(lambda_coefs)))
 
             if y is not None:
-                censor_ = at.eq(censor_, 1)
+                censor_ = pm.math.eq(censor_, 1)
                 y = pm.Exponential("y", at.ones_like(time_uncensor_) / lambda_det[~censor_],
                                    observed=time_uncensor_)
 

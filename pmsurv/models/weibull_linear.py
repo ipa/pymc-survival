@@ -2,7 +2,6 @@ import logging
 import numpy as np
 import pymc as pm
 from pmsurv.models.weibull_base import WeibullModelBase
-import aesara.tensor as at
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +91,7 @@ class WeibullModelLinear(WeibullModelBase):
             k_det = pm.Deterministic("k_det", pm.math.exp(k_intercept + k))
 
             if y is not None:
-                censored_ = at.eq(censor_, 1)
+                censored_ = pm.math.eq(censor_, 1)
                 y = pm.Weibull("y", alpha=k_det[~censored_], beta=lambda_det[~censored_],
                                observed=time_uncensor_)
 

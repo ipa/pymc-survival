@@ -9,7 +9,6 @@ import pymc as pm
 from pmsurv.exc import PyMCModelsError
 from pmsurv.models.base import BayesianModel
 import pmsurv.utils
-import aesara.tensor as at
 
 
 class GaussianProcessModel(BayesianModel):
@@ -75,7 +74,7 @@ class GaussianProcessModel(BayesianModel):
             lambda_det = pm.math.exp(lambda_intercept + f)
 
             if y is not None:
-                censored_ = at.eq(censor_, 1)
+                censored_ = pm.math.eq(censor_, 1)
                 y_ = pm.Exponential("y", pm.math.ones_like(time_uncensor_) / lambda_det[~censored_],
                                     observed=time_uncensor_)
 

@@ -5,7 +5,6 @@ import numpy as np
 from numpy.random import default_rng
 import pymc as pm
 from pmsurv.models.weibull_base import WeibullModelBase
-import aesara.tensor as at
 
 # https://github.com/pyro-ppl/numpyro/issues/534
 # http://num.pyro.ai/en/stable/mcmc.html#numpyro.infer.mcmc.MCMC.post_warmup_state
@@ -109,7 +108,7 @@ class WeibullModelNN(WeibullModelBase):
                     k_constant = 0.0
                     k_ = pm.Deterministic("k_det", pm.math.exp(k_intercept + (x_hidden[:,1] * k_constant)))
 
-                censored = at.eq(censor_, 1)
+                censored = pm.math.eq(censor_, 1)
                 y = pm.Weibull("y", alpha=k_[~censored], beta=lambda_[~censored],
                                observed=time_uncensor_)
 
