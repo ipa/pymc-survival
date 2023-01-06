@@ -24,7 +24,7 @@ def synthetic_data_random(n_samples=100, as_dataframe=True):
     return X, y
 
 
-def synthetic_data_weibull(lam_ctrl, lam_trt, k, n_samples=1000, as_dataframe=True):
+def synthetic_data_weibull(lam_ctrl, lam_trt, k, n_samples=100, as_dataframe=True):
     X = np.stack((np.zeros((int(n_samples / 2))), np.ones((int(n_samples / 2))))).flatten()
     X = np.expand_dims(X, axis=1)
 
@@ -40,7 +40,7 @@ def synthetic_data_weibull(lam_ctrl, lam_trt, k, n_samples=1000, as_dataframe=Tr
 
     return X, y
 
-def synthetic_data_intercept_only(lam, k, n_samples=1000, as_dataframe=True):
+def synthetic_data_intercept_only(lam, k, n_samples=100, as_dataframe=True):
     rng = default_rng(seed=0)
     X = np.zeros((n_samples, 1))
     y_time = weibull_min.rvs(c=np.exp(k), scale=np.exp(lam), size=(n_samples)).T.flatten()

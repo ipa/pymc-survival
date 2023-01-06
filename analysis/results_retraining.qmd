@@ -1,0 +1,367 @@
+---
+title: "Bayesian parametric models for survival prediction in medical applications"
+subtitle: "Retraining using Bayes rule"
+date: "12-02-2022"
+author:
+  - name: Iwan Paolucci, PhD
+    affiliation: "MD Anderson Cancer Center, Department of Interventional Radiology, Houston, TX, USA"
+    orcid: 0000-0002-9393-3015
+toc: true
+format: pdf
+editor: source
+---
+
+\newpage
+
+# Aim
+
+The aim of this experiment was to test whether continuous learning using Bayesian model updating performs as good as training on the full dataset each time. The DeepSurv algorithm is used as control which uses traditional transfer learning for Neural Networks.
+
+***Hypothesis***: The difference in C-Index between full retraining and model updating is 0 with an equivalence margin of 0.01 [-0.01, 0.01].
+
+# Setup
+
+```{r global-options, include=FALSE}
+library(knitr)
+npj.fig.width.1 <- 88 / 25.4
+npj.fig.width.2 <- 180 / 25.4
+knitr::opts_chunk$set(fig.width=npj.fig.width.2, fig.path='out/figs/', 
+                      dpi = 300, dev=c("pdf", "png"), fig.align = 'center',
+                      echo=TRUE, warning=FALSE, message=FALSE)
+```
+
+
+```{r setup, echo=TRUE, warning=FALSE, message=FALSE}
+library(ggplot2)
+library(ggpubr)
+library(gridExtra)
+library(gtsummary)
+library(dplyr)
+library(gt)
+library(bayestestR)
+library(rstanarm)
+library(stringr)
+```
+
+\newpage
+
+```{r load-data, include=FALSE}
+redownload <- TRUE
+
+if (redownload) {
+  src_folder <- 'U:/src/pymc-survival/examples/experiments/results_retrain'
+  numbering <- c(rep(seq(1, 75), each=18),
+                     rep(seq(1, 75), each=10),
+                     rep(seq(1, 75), each=10),
+                     rep(seq(1, 75), each=10))
+  length(numbering)
+  
+  data.exp <- rbind(read.csv(paste(src_folder, 'pm_exp_aids/results.csv', sep = '/')),
+                    read.csv(paste(src_folder, 'pm_exp_gbcs/results.csv', sep = '/')),
+                    read.csv(paste(src_folder, 'pm_exp_pbc/results.csv', sep = '/')),
+                    read.csv(paste(src_folder, 'pm_exp_whas/results.csv', sep = '/'))
+                    )
+  data.exp$run <- numbering
+  
+  data.wb <- rbind(read.csv(paste(src_folder, 'pm_wb_aids/results.csv', sep = '/')),
+                   read.csv(paste(src_folder, 'pm_wb_gbcs/results.csv', sep = '/')),
+                   read.csv(paste(src_folder, 'pm_wb_pbc/results.csv', sep = '/')),
+                   read.csv(paste(src_folder, 'pm_wb_whas/results.csv', sep = '/'))
+                   )
+  data.wb$run <- numbering
+  
+  data.dps <- rbind(read.csv(paste(src_folder, 'deepsurv_aids/results.csv', sep = '/')),
+                    read.csv(paste(src_folder, 'deepsurv_pbc/results.csv', sep = '/')),
+                    read.csv(paste(src_folder, 'deepsurv_whas/results.csv', sep = '/')),
+                    read.csv(paste(src_folder, 'deepsurv_gbcs/results.csv', sep = '/'))
+                   )
+  data.dps$run <- numbering
+  
+  data <- rbind(data.exp, data.wb, data.dps)
+  
+  write.csv(data, file = 'data/results_retraining.csv', row.names = FALSE)
+
+}
+
+```
+
+\newpage
+
+# Load data
+
+```{r load-data-2}
+data <- read.csv('data/results_retraining.csv') %>%
+  filter(run <= 75)
+```
+
+## Preprocess data
+
+```{r}
+
+
+data.full <- data %>% filter(train_type == 'full')
+data.retrain <- data %>% filter(train_type == 'retrain')
+
+data.merge <- base::merge(data.full, data.retrain, 
+                          by.x = c('model', 'experiment', 'run', 'iter'),
+                          by.y = c('model', 'experiment', 'run', 'iter'))
+data.merge <- data.merge %>% rename(
+    cindex.full = cindex.x,
+    cindex.retrain = cindex.y
+  ) %>%
+  select(model, experiment, run, iter, cindex.full, cindex.retrain) %>%
+  mutate(
+    cindex.diff = cindex.full - cindex.retrain
+  )
+
+
+```
+
+```{r preprocess-data}
+
+data <- data %>%
+  mutate(experiment_lbl = factor(experiment, 
+                                 labels = c("ACTG", "GBCS", "PBC", "WHAS")),
+         model_lbl = factor(model, 
+                            labels = c("DeepSurv", "PM Exp", "PM Wb")),
+         train_type_lbl = factor(train_type, 
+                                 labels = c("Full", "Retrain")),
+         run_iter = paste(run, iter, sep = '/'))
+
+
+data.merge <- data.merge %>%
+  mutate(experiment_lbl = factor(experiment, 
+                                 labels = c("ACTG", "GBCS", "PBC", "WHAS")),
+         model_lbl = factor(model, 
+                            labels = c("DeepSurv", "PM Exp", "PM Wb")),
+         run_iter = paste(run, iter, sep = '/'))
+
+```
+
+Show number of runs per dataset and model combination.
+
+```{r descriptive}
+
+data %>%
+  filter(iter == 0) %>%
+  select(model_lbl, model, experiment_lbl, train_type_lbl, cindex) %>%
+  group_by(model_lbl, experiment_lbl, train_type_lbl) %>%
+  summarise(
+    n = n(),
+    lbl = first(model),
+  )
+
+```
+
+\newpage
+
+# Results
+
+Group data for plotting first to enable median and CI 95%.
+
+```{r , message=FALSE}
+data.grouped <- data %>%
+  group_by(experiment_lbl, model_lbl, train_type_lbl, iter) %>%
+  summarise(
+    n = n(),
+    median = median(cindex),
+    median_lower = wilcox.test(cindex, conf.int = TRUE)$conf.int[1],
+    median_upper = wilcox.test(cindex, conf.int = TRUE)$conf.int[2]
+  )
+
+data.merged.grouped <- data.merge %>%
+  group_by(experiment_lbl, model_lbl, iter) %>%
+  summarise(
+    n = n(),
+    median = median(cindex.diff),
+    median_lower = wilcox.test(cindex.diff, conf.int = TRUE)$conf.int[1],
+    median_upper = wilcox.test(cindex.diff, conf.int = TRUE)$conf.int[2],
+    p = wilcox.test(cindex.diff)$p.value
+  )
+```
+
+## Performence over time by experiment and model
+
+```{r retrain-all, fig.width=7, fig.asp=0.75}
+
+plt.all <- ggline(data = data.grouped, 
+                  x = 'iter', y = 'median', color = 'train_type_lbl', group = 'train_type_lbl',
+             facet.by = c('experiment_lbl', 'model_lbl'),
+             add.params = list(color = "train_type_lbl", size = 1, width = 0.25),
+             palette = 'lancet', size = 0.25) +
+  geom_errorbar(data = data.grouped, aes(ymin = median_lower, ymax = median_upper,
+                                         color = train_type_lbl), width = 0.25)
+
+
+plt.all <- ggpar(plt.all, ylab = 'C-Index', xlab = 'Partition', legend.title = "Training type")
+
+plt.all
+
+```
+
+## Difference between training types
+
+```{r plt-retrain-diff, fig.width=7, fig.asp=0.9}
+
+plt.all <- ggline(data = data.merged.grouped, 
+                  x = 'iter', y = 'median', color='model_lbl',
+             facet.by = c('experiment_lbl'),
+             add.params = list(size = 1, width = 0.25),
+             palette = 'lancet', size = 0.25) +
+  geom_errorbar(data = data.merged.grouped, 
+                aes(color = model_lbl, ymin = median_lower, ymax = median_upper), 
+                width = 0.25) +
+  geom_hline(yintercept = c(-0.01, 0.01), color = 'black', linetype = 'dashed')
+
+
+plt.all <- ggpar(plt.all, ylab = 'C-Index', xlab = 'Partition', legend.title = "Training type")
+
+plt.all
+```
+
+
+
+## Test for equivalence
+
+
+```{r fit-model}
+
+comparisons <- data.frame('Model'=character(),
+                          'Experiment'=character(),
+                          'HDI_low'=double(),
+                          'HDI_high'=double(),
+                          'ROPE_percentage'=double(),
+                          'ROPE_equivalence'=character())
+
+for (idx_experiment in levels(data.merge$experiment_lbl)){
+  for (idx_model in levels(data.merge$model_lbl)){
+    model <- stan_glm(cindex.diff ~ 1 , 
+                  data = data.merge %>% 
+                    filter(experiment_lbl == idx_experiment & model_lbl == idx_model),
+                  refresh = 0,
+                  algorithm = 'sampling')
+    
+    et <- equivalence_test(model, 
+                 range = c(-0.01, +0.01),
+                 ci = 1 - 0.05 / 3
+                 )
+    comparisons <- rbind(comparisons, data.frame(
+      'Model'=idx_model,
+      'Experiment'=idx_experiment,
+      'HDI_mean'=signif(model$coefficients['(Intercept)'], digits = 2),
+      'HDI_low'=signif(et$HDI_low, digits = 2),
+      'HDI_high'=signif(et$HDI_high, digits = 2),
+      'ROPE_percentage'=round(et$ROPE_Percentage * 100, 1),
+      'ROPE_equivalence'=et$ROPE_Equivalence
+    ))
+  }
+}
+
+comparisons %>% as_tibble()
+
+comparisons$cindex <- sprintf("%0.4f [%0.4f - %0.4f]", comparisons$HDI_mean, comparisons$HDI_low, comparisons$HDI_high)
+
+comparisons %>% gt() %>% gtsave(filename = 'out/results_retrain.rtf')
+
+
+```
+
+```{r plt-equiv-test, fig.width=7, fig.asp=0.9}
+ggscatter(data = comparisons, x = 'Model', y = 'HDI_mean',
+          facet.by = 'Experiment',
+          color = 'Model', palette = 'lancet', ylab = 'C-Index') +
+  geom_hline(yintercept = c(-0.01, 0.01), color = 'black', linetype = 'dashed') +
+  geom_errorbar(data = comparisons,
+                  aes(color = Model, ymin = HDI_low, ymax = HDI_high),
+                  width = 0.25) 
+
+
+```
+
+\newpage
+
+# Performance by model
+
+## ACTG
+
+```{r retrain-actg, fig.width=7, fig.asp=0.5}
+plt.actg <- data %>% filter(experiment_lbl == 'ACTG') %>%
+  ggline(data = ., x = 'iter', y = 'cindex', color = 'train_type_lbl', group = 'train_type_lbl',
+       add = c("mean_ci"), facet.by = c('experiment_lbl', 'model_lbl'),
+       add.params = list(color = "train_type_lbl", size = 1, width = 0.25),
+       palette = 'lancet', size = 0.5)
+
+plt.actg <- ggpar(plt.actg, ylab = 'C-Index', xlab = '', legend.title = "Training type") 
+
+plt.actg
+
+```
+
+\newpage 
+
+## GBCS
+
+```{r retrain-gbcs, fig.width=7, fig.asp=0.5}
+plt.gbcs <- data %>% filter(experiment_lbl == 'GBCS') %>%
+  ggline(data = ., x = 'iter', y = 'cindex', color = 'train_type_lbl', group = 'train_type_lbl',
+       add = c("mean_ci"), facet.by = c('experiment_lbl', 'model_lbl'),
+       add.params = list(color = "train_type_lbl", size = 1, width = 0.25),
+       palette = 'lancet', size = 0.5) 
+
+plt.gbcs <- ggpar(plt.gbcs, ylab = 'C-Index', xlab = '', legend.title = "Training type") 
+
+plt.gbcs
+```
+
+\newpage 
+
+## PBC
+
+```{r retrain-pbc , fig.width=7, fig.asp=0.5}
+plt.pbc <- data %>% filter(experiment_lbl == 'PBC') %>%
+  ggline(data = ., x = 'iter', y = 'cindex', color = 'train_type_lbl', group = 'train_type_lbl',
+       add = c("mean_ci"), facet.by = c('experiment_lbl', 'model_lbl'),
+       add.params = list(color = "train_type_lbl", size = 1, width = 0.25),
+       palette = 'lancet', size = 0.5) 
+
+plt.pbc <- ggpar(plt.pbc, ylab = 'C-Index', xlab = '', legend.title = "Training type") 
+
+plt.pbc
+```
+
+\newpage 
+
+## WHAS
+
+```{r retrain-whas, fig.width=7, fig.asp=0.5}
+plt.whas <- data %>% filter(experiment_lbl == 'WHAS') %>%
+  ggline(data = ., x = 'iter', y = 'cindex', color = 'train_type_lbl', group = 'train_type_lbl',
+       add = c("mean_ci"), facet.by = c('experiment_lbl', 'model_lbl'),
+       add.params = list(color = "train_type_lbl", size = 1, width = 0.25),
+       palette = 'lancet', size = 0.5) 
+
+plt.whas <- ggpar(plt.whas, ylab = 'C-Index', xlab = '', legend.title = "Training type") 
+
+plt.whas
+```
+
+
+\newpage
+
+# Diagnostics
+
+## Check distributionof C-Indexes
+
+Compute Shapiro test for C-index on each experiment/model combination.
+
+```{r}
+data %>%
+  group_by(model_lbl, experiment_lbl, iter, train_type) %>%
+  summarise(n = n(),
+            shap_test = round(shapiro.test(cindex)$p.value, 3),
+            is_normal = (shapiro.test(cindex)$p.value > 0.05),
+            sd = sd(cindex)
+            )
+```
+
+There are a few cases where the C-Indexes are not normally distributed. 
