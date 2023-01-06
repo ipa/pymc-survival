@@ -76,7 +76,7 @@ class ExponentialModel(BayesianModel):
 
             if y is not None:
                 censor_ = pm.math.eq(censor_, 1)
-                y = pm.Exponential("y", at.ones_like(time_uncensor_) / lambda_det[~censor_],
+                y = pm.Exponential("y", pm.math.ones_like(time_uncensor_) / lambda_det[~censor_],
                                    observed=time_uncensor_)
 
                 def exponential_lccdf(lam, time):
@@ -84,7 +84,7 @@ class ExponentialModel(BayesianModel):
                     return -(lam * time)
 
                 y_cens = pm.Potential(
-                    "y_cens", exponential_lccdf(at.ones_like(time_censor_) / lambda_det[censor_], time_censor_)
+                    "y_cens", exponential_lccdf(pm.math.ones_like(time_censor_) / lambda_det[censor_], time_censor_)
                 )
 
         return model
