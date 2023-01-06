@@ -11,7 +11,7 @@ from jax.tree_util import register_pytree_node_class
 from aesara.tensor.basic import Eye
 from aesara.link.jax.dispatch import jax_funcify
 
-__all__ = ["interp"]
+# __all__ = ["interp"]
 
 #https://github.com/DifferentiableUniverseInitiative/jax_cosmo
 
