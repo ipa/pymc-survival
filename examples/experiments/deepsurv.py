@@ -6,6 +6,7 @@ import lifelines
 from sklearn.base import BaseEstimator
 from sklearn.feature_selection import SelectKBest
 from sklearn.pipeline import Pipeline
+import pandas as pd
 try:
     import torch
     import torchtuples as tt
@@ -52,7 +53,10 @@ class PyCoxWrapper(BaseEstimator):
         return self
 
     def predict(self, X):
-        X = X.values.astype(np.float32)
+        if isinstance(X, pd.DataFrame):
+            X = X.values.astype(np.float32)
+        else:
+            X = X.astype(np.float32)
         surv = self.cox.predict_surv_df(X).T.values
         return surv
 

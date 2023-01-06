@@ -75,17 +75,18 @@ class ExponentialModel(BayesianModel):
                 lambda_coefs.append(model_input[:, i] * lambda_coef)
             lambda_det = pm.Deterministic("lambda_det", pm.math.exp(lambda_intercept + sum(lambda_coefs)))
 
-            censor_ = at.eq(censor_, 1)
-            y = pm.Exponential("y", at.ones_like(time_uncensor_) / lambda_det[~censor_],
-                               observed=time_uncensor_)
+            if y is not None:
+                censor_ = at.eq(censor_, 1)
+                y = pm.Exponential("y", at.ones_like(time_uncensor_) / lambda_det[~censor_],
+                                   observed=time_uncensor_)
 
-            def exponential_lccdf(lam, time):
-                """ Log complementary cdf of Exponential distribution. """
-                return -(lam * time)
+                def exponential_lccdf(lam, time):
+                    """ Log complementary cdf of Exponential distribution. """
+                    return -(lam * time)
 
-            y_cens = pm.Potential(
-                "y_cens", exponential_lccdf(at.ones_like(time_censor_) / lambda_det[censor_], time_censor_)
-            )
+                y_cens = pm.Potential(
+                    "y_cens", exponential_lccdf(at.ones_like(time_censor_) / lambda_det[censor_], time_censor_)
+                )
 
         return model
 
@@ -134,12 +135,10 @@ class ExponentialModel(BayesianModel):
         with self.cached_model:
             pm.set_data({
                 'model_input': X,
-                'time_uncensor': np.zeros(num_samples).astype(np.int32),
-                'censor': np.zeros(num_samples).astype(np.int32)
             })
 
         ppc = pm.sample_posterior_predictive(self.trace, model=self.cached_model, return_inferencedata=False,
-                                             random_seed=0, progressbar=False, var_names=['y', 'lambda_det'])
+                                             random_seed=0, progressbar=False, var_names=['lambda_det'])
         logger.info("")
 
         t_plot = pmsurv.utils.get_time_axis(0, self.max_time, resolution)
