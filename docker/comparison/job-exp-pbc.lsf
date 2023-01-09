@@ -1,0 +1,27 @@
+#BSUB -W 0:30
+#BSUB -o /rsrch3/scratch/int_rad_rsch/ipaolucci/logs/pymc-survival
+#BSUB -e /rsrch3/scratch/int_rad_rsch/ipaolucci/logs/pymc-survival
+#BSUB -cwd /rsrch3/home/int_rad_rsch/ipaolucci/src/pymc-survival/docker
+#BSUB -q short
+#BSUB -n 15 
+#BSUB -M 16
+#BSUB -R rusage[mem=16]
+#BSUB -u ipaolucci@mdanderson.org
+#BSUB -J pmsurv_exp_pbc 
+
+## To submit:  bsub < example.lsf
+
+module load singularity/3.7.0
+
+singularity exec \
+    --env WORKING_DIRECTORY=/home/pymc/src/examples/experiments \
+    --env PYTHONPATH=/home/pymc/src \
+    --no-home \
+    --bind $HOME/src/pymc-survival:/home/pymc/src \
+    modelling_pymc4-jupyter-latest.sif \
+    /bin/bash -c " \
+        export AESARA_FLAGS="base_compiledir=/tmp/.aesara"
+        python /home/pymc/src/examples/experiments/run_experiment.py pmsurv_exponential pm_exp_pbc data/pbc --runs 3 --jobs 15 --n-iter 25 \
+    "
+
+
