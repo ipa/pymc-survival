@@ -216,7 +216,7 @@ comparisons <- data.frame('Model'=character(),
 
 for (idx_experiment in levels(data$experiment_lbl)){
   for (idx_model in levels(data$model_lbl)){
-    model <- stan_glm(cindex_diff ~ 1 , 
+    model <- stan_glm(cindex ~ 1 , 
                   data = data %>% 
                     filter(experiment_lbl == idx_experiment & model_lbl == idx_model),
                   refresh = 0,
@@ -241,7 +241,7 @@ for (idx_experiment in levels(data$experiment_lbl)){
 ggscatter(data = comparisons, x = 'Model', y = 'HDI_mean',
           facet.by = 'Experiment',
           color = 'Model', palette = 'lancet', ylab = 'C-Index') +
-  geom_hline(yintercept = c(0.01), color = 'black', linetype = 'dashed') +
+  #geom_hline(yintercept = c(0.01), color = 'black', linetype = 'dashed') +
   geom_errorbar(data = comparisons,
                   aes(color = Model, ymin = HDI_low, ymax = HDI_high),
                   width = 0.25) +
