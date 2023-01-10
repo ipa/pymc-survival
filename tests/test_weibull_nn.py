@@ -5,7 +5,7 @@ import unittest
 import arviz as az
 
 from pmsurv.models.weibull_nn import WeibullModelNN
-import data
+import tests.syntheticdata
 from pathlib import Path
 
 warnings.simplefilter("ignore")
@@ -31,7 +31,7 @@ class TestWeibullNN(unittest.TestCase):
         lam_ctrl = 1
         lam_trt = 2.5
         k = 1
-        X, y = data.synthetic_data_weibull(lam_ctrl=lam_ctrl, lam_trt=lam_trt, k=k)
+        X, y = tests.syntheticdata.synthetic_data_weibull(lam_ctrl=lam_ctrl, lam_trt=lam_trt, k=k)
         y[:, 1] = 1 - y[:, 1]  # inverse
         print(X)
         wb_model = WeibullModelNN()
@@ -43,7 +43,7 @@ class TestWeibullNN(unittest.TestCase):
         lam_ctrl = 1
         lam_trt = 2.5
         k = 1
-        X, y = data.synthetic_data_weibull(lam_ctrl=lam_ctrl, lam_trt=lam_trt, k=k)
+        X, y = tests.syntheticdata.synthetic_data_weibull(lam_ctrl=lam_ctrl, lam_trt=lam_trt, k=k)
         y[:, 1] = 1 - y[:, 1]  # inverse
         print(X.shape, y.shape)
         fit_args = {'draws': 1000, 'tune': 500, 'target_accept': 0.85, 'chains': 2, 'cores': 1,
@@ -60,7 +60,7 @@ class TestWeibullNN(unittest.TestCase):
     def test_save_and_load(self):
         print("test_save_and_load")
         included_features = ['a', 'b', 'c']
-        X, y = data.synthetic_data_random()
+        X, y = tests.syntheticdata.synthetic_data_random()
         print(X.shape, y.shape)
         fit_args = {'draws': 2000, 'tune': 1000, 'chains': 2, 'cores': 1, 'return_inferencedata': True}
         wb_model = WeibullModelNN()
@@ -89,7 +89,7 @@ class TestWeibullNN(unittest.TestCase):
     def test_score(self):
         print("test_fit_1")
         included_features = ['a']
-        X, y = data.synthetic_data_weibull(lam_ctrl=1, lam_trt=2.5, k=1)
+        X, y = tests.syntheticdata.synthetic_data_weibull(lam_ctrl=1, lam_trt=2.5, k=1)
         y[:, 1] = 1 - y[:, 1]  # inverse
         print(X.shape, y.shape)
         fit_args = {'draws': 1000, 'tune': 1000, 'chains': 2, 'cores': 1, 'return_inferencedata': True,

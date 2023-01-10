@@ -1,1 +1,0 @@
- docker run -p 8888:8888 --name pymc4-jupyter --rm -it --mount type=bind,source=C:\Users\ipaolucci\Develop\pymc-survival,target=/home/pymc/src gitlabregistry.mdanderson.edu/ipaolucci/docker-reg/modelling:pymc4-jupyter-latest /bin/bash
