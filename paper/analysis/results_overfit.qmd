@@ -226,7 +226,7 @@ for (idx_experiment in levels(data$experiment_lbl)){
 ```{r plt-equiv-test, fig.width=7, fig.asp=0.9}
 ggscatter(data = comparisons, x = 'Model', y = 'HDI_mean',
           facet.by = 'Experiment',
-          color = 'Model', palette = 'lancet', ylab = 'C-Index') +
+          color = 'Model', palette = 'lancet', ylab = 'Decrease in C-Index') +
   geom_hline(yintercept = c(0.01), color = 'black', linetype = 'dashed') +
   geom_errorbar(data = comparisons,
                   aes(color = Model, ymin = HDI_low, ymax = HDI_high),
