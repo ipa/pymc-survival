@@ -1,12 +1,12 @@
 #BSUB -W 3:00
-#BSUB -o /rsrch3/scratch/int_rad_rsch/ipaolucci/logs/pymc-survival
-#BSUB -e /rsrch3/scratch/int_rad_rsch/ipaolucci/logs/pymc-survival
-#BSUB -cwd /rsrch3/home/int_rad_rsch/ipaolucci/src/pymc-survival/docker
+#BSUB -o /rsrch3/scratch/int_rad_rsch/[user]/logs/pymc-survival
+#BSUB -e /rsrch3/scratch/int_rad_rsch/[user]/logs/pymc-survival
+#BSUB -cwd /rsrch3/home/int_rad_rsch/[user]/src/pymc-survival/docker
 #BSUB -q short
 #BSUB -n 15
 #BSUB -M 16
 #BSUB -R rusage[mem=16]
-#BSUB -u ipaolucci@mdanderson.org
+#BSUB -u [email]
 #BSUB -J pmsurv_exp_gbcs 
 
 ## To submit:  bsub < example.lsf

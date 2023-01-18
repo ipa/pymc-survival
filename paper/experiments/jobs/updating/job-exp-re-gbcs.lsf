@@ -1,12 +1,12 @@
 #BSUB -W 12:00
-#BSUB -o /rsrch3/scratch/int_rad_rsch/ipaolucci/logs/pymc-survival
-#BSUB -e /rsrch3/scratch/int_rad_rsch/ipaolucci/logs/pymc-survival
-#BSUB -cwd /rsrch3/home/int_rad_rsch/ipaolucci/src/pymc-survival/docker
+#BSUB -o /rsrch3/scratch/int_rad_rsch/[user]/logs/pymc-survival
+#BSUB -e /rsrch3/scratch/int_rad_rsch/[user]/logs/pymc-survival
+#BSUB -cwd /rsrch3/home/int_rad_rsch/[user]/src/pymc-survival/docker
 #BSUB -q medium
 #BSUB -n 2
 #BSUB -M 8
 #BSUB -R rusage[mem=8]
-#BSUB -u ipaolucci@mdanderson.org
+#BSUB -u [email]
 #BSUB -J pmsurv_exp_re_gbcs 
 
 module load singularity/3.7.0
