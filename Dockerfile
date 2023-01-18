@@ -17,7 +17,7 @@ RUN pip install arviz>=0.12.0 \
                 h5py \
                 lifelines>=0.27.0 \
                 matplotlib \
-                numpy \
+                numpy<1.24 \
                 numpyro  \
                 pandas>=1.0.0 \
                 pqdm \
@@ -30,25 +30,18 @@ RUN pip install arviz>=0.12.0 \
                 seaborn \
                 tables 
 
-# RUN pip install --upgrade jax==0.3.25 jaxlib==0.3.25+cuda11.cudnn82 -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
 RUN pip install --upgrade "jax[cuda]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
-#JAX sampling with CUDA not yet working
+#NOTE: JAX sampling with CUDA not yet working
 
-FROM pymc-cuda AS pymc-survival
-
-COPY src /opt/src/pymc-survival/src
-COPY pyproject.toml /opt/src/pymc-survival
-
-RUN pip install /opt/src/pymc-survival
-
-FROM pymc-cuda AS pymc-cuda-jupyter
+FROM  pymc-cuda AS pymc-cuda-jupyter
 
 RUN pip install jupyterlab \
                 ipywidgets
 
-FROM pymc-cuda AS pymc-cuda-pmsurv-jupyter
+FROM pymc-cuda-jupyter AS pymc-survival
 
 COPY src /opt/src/pymc-survival/src
 COPY pyproject.toml /opt/src/pymc-survival
 
 RUN pip install /opt/src/pymc-survival
+

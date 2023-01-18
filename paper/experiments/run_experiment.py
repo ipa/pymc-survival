@@ -35,9 +35,7 @@ def nostdout():
 preprocess_data_fun = {
     'pmsurv_exponential': pmsurv_exponential.preprocess_data,
     'pmsurv_weibull_linear': pmsurv_weibull.preprocess_data,
-    'pmsurv_weibull_linear_k': pmsurv_weibull.preprocess_data,
     'pmsurv_weibull_nn': pmsurv_weibull_nn.preprocess_data,
-    'pmsurv_weibull_nn_k': pmsurv_weibull_nn.preprocess_data,
     'pmsurv_gp': pmsurv_common.preprocess_data,
     'rsf': rsf.preprocess_data,
     'cox': coxph.preprocess_data,
@@ -47,9 +45,7 @@ preprocess_data_fun = {
 train_fun = {
     'pmsurv_exponential': pmsurv_exponential.train_model,
     'pmsurv_weibull_linear': pmsurv_weibull.train_model,
-    'pmsurv_weibull_linear_k': pmsurv_weibull.train_model_k,
     'pmsurv_weibull_nn': pmsurv_weibull_nn.train_model,
-    'pmsurv_weibull_nn_k': pmsurv_weibull_nn.train_model,
     'pmsurv_gp': pmsurv_gp.train_model,
     'rsf': rsf.train_model,
     'cox': coxph.train_model,
@@ -59,9 +55,7 @@ train_fun = {
 save_fun = {
     'pmsurv_exponential': pmsurv_exponential.save,
     'pmsurv_weibull_linear': pmsurv_exponential.save,
-    'pmsurv_weibull_linear_k': pmsurv_exponential.save,
     'pmsurv_weibull_nn': pmsurv_exponential.save,
-    'pmsurv_weibull_nn_k': pmsurv_exponential.save,
     'pmsurv_gp': pmsurv_common.save,
     'rsf': rsf.save,
     'cox': coxph.save,
@@ -137,7 +131,7 @@ if __name__ == '__main__':
     os.makedirs(experiment_dir, exist_ok=True)
 
     train_kwargs = {'jobs': args.jobs, 'n_iter': args.n_iter}
-
+    logger.info(f"train arguments {train_kwargs}")
     c_indexes = utils.RollingMean()
     warnings.filterwarnings(action='ignore')
 
