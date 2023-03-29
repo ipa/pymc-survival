@@ -1,7 +1,7 @@
 ---
 title: "Bayesian parametric models for survival prediction in medical applications"
 subtitle: "Overlap of posterior distributions"
-date: "12-02-2022"
+date: "03-29-2023"
 author:
   - name: Iwan Paolucci, PhD
     affiliation: "MD Anderson Cancer Center, Department of Interventional Radiology, Houston, TX, USA"
@@ -22,11 +22,12 @@ library(ggplot2)
 library(ggpubr)
 library(ggsci)
 library(dplyr)
+library(stringr)
 ```
 
 ```{r}
 knitr::opts_chunk$set(dev.args = list(png = list(type = "cairo")),
-                      fig.path='out/figs/ovi', dpi = 300)
+                      fig.path='out/figs/ovi/', dev = c('pdf', 'png'), dpi = 300)
 ```
 
 # Load data
@@ -69,6 +70,13 @@ if (redownload){
 load(file = 'data/ovi.rds')
 ```
 
+```{r}
+data$experiment_lbl <- toupper(data$experiment_lbl)
+
+data$model_lbl <- factor(data$model_lbl, labels = c('PM Exponential', 'PM Weibull'))
+
+```
+
 
 # Functions
 
@@ -78,17 +86,19 @@ plot_ovi <- function(.data, experiment_str, model_str){
   data.grouped <- .data %>%
     filter(experiment == experiment_str) %>%
     mutate(
-      var_lbl = as.factor(var)
+      var_lbl = factor(str_sub(var, 8, -1)),
+      experiment_lbl = toupper(experiment_lbl)
     ) %>%
     group_by(experiment_lbl, model_lbl, var_lbl, partition) %>%
     summarise(
       n = n(),
       median = median(ovi),
       median_lower = wilcox.test(ovi, conf.int = TRUE)$conf.int[1],
-      median_upper = wilcox.test(ovi, conf.int = TRUE)$conf.int[2]
+      median_upper = wilcox.test(ovi, conf.int = TRUE)$conf.int[2],
+      model = first(model)
     )
   
-  data_filtered <- data.grouped %>% filter(model_lbl == model_str)
+  data_filtered <- data.grouped %>% filter(model == model_str) 
 
   plt.all <- ggline(data = data_filtered, 
                     x = 'partition', y = 'median', color = 'var_lbl', group = 'var_lbl',
@@ -102,6 +112,7 @@ plot_ovi <- function(.data, experiment_str, model_str){
   
   return (plt.all)
 }
+
 ```
 
 

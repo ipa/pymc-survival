@@ -17,11 +17,12 @@ library(ggplot2)
 library(ggpubr)
 library(ggsci)
 library(dplyr)
+library(stringr)
 ```
 
 ```{r}
 knitr::opts_chunk$set(dev.args = list(png = list(type = "cairo")),
-                      fig.path='out/figs/posterior/', dpi = 300)
+                      fig.path='out/figs/posterior/', dev = c('pdf', 'png'), dpi = 300)
 ```
 
 # Load data
@@ -77,7 +78,6 @@ data <- data %>%
 data <- data %>%
   filter((!var %in% c('lambda_yrgrp_1975 & 1978', 'lambda_yrgrp_1981 & 1984', 'lambda_yrgrp_1986 & 1988')))
 
-
 ```
 
 ```{r}
@@ -85,18 +85,23 @@ data <- data %>%
 plot_density <- function(data, experiment_str, model_str, var_str){
   
   data.filter <- data %>%
-    filter(experiment == experiment_str & model == model_str) 
-  
-  data.filter$partition_lbl = factor(data.filter$partition, 
-                                     labels = paste("P", unique(data.filter$partition), sep = ""))
+    filter(experiment == experiment_str & model == model_str) %>%
+    mutate(partition_lbl = factor(partition, 
+                                  labels = paste("P", unique(partition), sep = "")),
+           var_lbl = factor(str_replace(var, 'lambda_', '')))
+  # 
+  # data.filter$partition_lbl = factor(data.filter$partition, 
+  #                                    labels = paste("P", unique(data.filter$partition), sep = ""))
   
   p1 <- ggdensity(data = data.filter %>% filter(var == var_str) ,
           x = 'posterior_samples', y = 'density', 
           add = 'median', 
           color = 'partition_lbl', size = 1,
           fill = 'partition_lbl', alpha = 0.005,
-          facet.by = c('var', 'posterior_type_lbl' ),
-          palette = get_palette(c("orange", "red"), length(levels(data.filter$partition_lbl))))
+          facet.by = c('var_lbl', 'posterior_type_lbl' ),
+          ylab = 'Density', xlab = 'Posterior samples',
+          palette = get_palette(c("orange", "red"), length(levels(data.filter$partition_lbl)))) +
+    labs(fill = "Partition", color = 'Partition')
   return (p1)
 }
 
@@ -104,16 +109,20 @@ plot_density_2 <- function(data, experiment_str, model_str, var_str, add_normal=
   data.filter <- data %>%
     filter(experiment == experiment_str & model == model_str) %>%
   mutate(
-    partition_lbl = factor(partition, levels = paste("P", unique(partition), sep = "")
-  ))
+    partition_lbl = factor(partition, 
+                           labels = paste("P", unique(partition), sep = "")),
+    var_lbl = factor(str_replace(var, 'lambda_', ''))
+  )
   
   p <- ggdensity(data = data.filter %>% filter(var == var_str) ,
             x = 'posterior_samples', y = 'density',
-            add = 'median', title = var_str,
+            add = 'median', 
             color = 'posterior_type_lbl', size = 1, 
             fill = 'posterior_type_lbl', alpha = 0.1,
-            facet.by = c('var', 'partition_lbl' ),
-            palette = 'npg')
+            facet.by = c('var_lbl', 'partition_lbl' ),
+            palette = 'npg',
+            ylab = 'Density', xlab = 'Posterior samples') +
+    labs(fill = "Training type", color = 'Training type')
   
   if (add_normal) {
     norm_dens <- data.frame(samples = rnorm(100)) 
@@ -127,67 +136,12 @@ plot_density_2 <- function(data, experiment_str, model_str, var_str, add_normal=
 
 ```
 
-```{r}
-
-# plot_density_2 <- function(data, experiment_str, model_str, var_str, add_normal=FALSE) {
-#   data.filter <- data %>%
-#     filter(experiment == experiment_str & model == model_str) %>%
-#   mutate(
-#     partition_lbl = factor(partition, levels = paste("P", unique(partition), sep = "")
-#   ))
-#   
-#   # dens <- density(data.filter$posterior_samples, 
-#   #                 from = min(data.filter$posterior_samples)/4, 
-#   #                 to = max(data.filter$posterior_samples)/4)
-#   # 
-#   # print(dens)
-#   
-#   # min_x <- dens$x[which.max(dens$y > 0.2)]
-#   # # max_x <- dens$x[which.max(dens$y[:-20] > 0.05)]
-#   # max_x <- max(data.filter$posterior_samples)
-#   # print(min_x)
-#   # print(max_x)
-# 
-#   norm_dens <- data.frame(samples = rnorm(100)) 
-#   
-#   p <- ggdensity(data = data.filter %>% filter(var == var_str) ,
-#             x = 'posterior_samples', y = 'density',
-#             add = 'median', title = var_str,
-#             color = 'posterior_type_lbl', size = 1, 
-#             fill = 'posterior_type_lbl', alpha = 0.1,
-#             facet.by = c('var', 'partition_lbl' ),
-#             palette = 'npg') 
-#   
-#   if (add_normal) {
-#     p <- p + stat_overlay_normal_density(
-#               data = norm_dens, aes(x = samples),
-#               linetype = "dashed" ) 
-#   }
-#   
-#   return (p)
-# }
-# 
-# p <- plot_density_2(data, 'whas', 'pm_exp', 'lambda_intercept', TRUE)
-# 
-# p
-
-```
-
-
 # Exponential
 
 ## WHAS
 
-```{r}
-# plot_density(data, 'whas', 'pm_exp', 'lambda_mitype_1')
-# 
-# plot_density_2(data, 'whas', 'pm_exp', 'lambda_mitype_1', TRUE)
-# plot_density_2(data, 'whas', 'pm_exp', 'lambda_mitype_3', TRUE)
-# plot_density_2(data, 'whas', 'pm_exp', 'lambda_chf', TRUE) + xlim(-2, 2)
-```
 
-
-```{r whas-posterior-type, fig.width=7, fig.asp=0.5}
+```{r whas-posterior-type, fig.width=7, fig.asp=0.375}
 
 whas_vars <- data %>% filter(experiment == 'whas' & model == 'pm_exp') %>% select(var) %>% unique(.)
 
@@ -197,6 +151,7 @@ for(var_idx in unique(whas_vars$var)){
   
   p <- plot_density_2(data, 'whas', 'pm_exp', var_idx)
   plot(p)
+
 }
 
 
