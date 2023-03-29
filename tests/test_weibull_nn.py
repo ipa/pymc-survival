@@ -62,7 +62,7 @@ class TestWeibullNN(unittest.TestCase):
         included_features = ['a', 'b', 'c']
         X, y = tests.syntheticdata.synthetic_data_random()
         print(X.shape, y.shape)
-        fit_args = {'draws': 2000, 'tune': 1000, 'chains': 2, 'cores': 1, 'return_inferencedata': True}
+        fit_args = {'draws': 1000, 'tune': 1000, 'chains': 2, 'cores': 1, 'return_inferencedata': True}
         wb_model = WeibullModelNN()
         wb_model.fit(X, y, inference_args=fit_args)
 
@@ -80,6 +80,8 @@ class TestWeibullNN(unittest.TestCase):
         wb_model2.load(file)
         score_2 = wb_model2.score(X, y)
         summary_2 = az.summary(wb_model2.trace, filter_vars='like', var_names=["~k_det", "~lambda_det"])
+
+        pred = wb_model2.predict(X)
 
         self.assertAlmostEqual(score_1, score_2, 2)
         print(summary_2)

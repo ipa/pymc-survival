@@ -39,7 +39,9 @@ class WeibullModelNN(WeibullModelBase):
             'k_mu': 1,
             'k_sd': 10,
             'coefs_mu': 0,
-            'coefs_sd': 0.25
+            'coefs_sd': 0.25,
+            'lambda_coefs_mu': 0,
+            'lambda_coefs_sd': 0.25
         }
 
 
@@ -92,12 +94,11 @@ class WeibullModelNN(WeibullModelBase):
 
                 lambda_intercept = pm.Normal("lambda_intercept",
                                              mu=self.priors['lambda_mu'],
-                                             sigma=self.priors['lambda_sd'],
-                                             shape=(1))
+                                             sigma=self.priors['lambda_sd'])
+                
                 k_intercept = pm.Normal('k_intercept',
                                         mu=self.priors['k_mu'],
-                                        sigma=self.priors['k_sd'],
-                                        shape=(1))
+                                        sigma=self.priors['k_sd'])
 
                 lambda_ = pm.Deterministic("lambda_det", pm.math.exp(lambda_intercept + x_hidden[:, 0]))
 

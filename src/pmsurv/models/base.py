@@ -104,7 +104,7 @@ class BayesianModel(BaseEstimator):
             'cores': 1,
             'return_inferencedata': True,
             'progressbar': False,
-            'type': 'blackjax'
+            'type': 'nuts'
         }
         return inference_args
 

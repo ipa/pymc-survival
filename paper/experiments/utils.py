@@ -46,7 +46,7 @@ def standardize(X_train, X_test, config):
     X_train[continuous_features] = scaler.fit_transform(X_train[continuous_features])
     X_test[continuous_features] = scaler.transform(X_test[continuous_features])
 
-    return X_train, X_test
+    return X_train, X_test, scaler
 
 
 def load_data(dataset_folder):
