@@ -8,7 +8,7 @@ This folder contains the code for the experiments. Each experiment has to be run
 
 All experiments are run inside a container (e.g. Docker, Singularity). To run the docker container simply run:
 
-    docker run -it --mount,type=bind,source=path/to/pymc-survivai/paper,target=/root/pymc-survival [image_name] /bin/bash
+    docker run -it --mount,type=bind,source=path/to/pymc-survival/paper,target=/root/pymc-survival [image_name] /bin/bash
 
 ### Models
 
