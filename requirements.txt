@@ -1,0 +1,10 @@
+arviz>=0.12.0
+numpy
+pandas>=1.0.0
+pymc>=4.3.0,<5.0
+scipy>=1.7.0
+scikit-learn>=1.0.0
+lifelines>=0.27.0
+pyyaml>=6.0
+blackjax
+numpyro

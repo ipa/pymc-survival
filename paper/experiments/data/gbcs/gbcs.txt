@@ -1,0 +1,58 @@
+NAME:
+German Breast Cancer Study Data (gbcs.dat)
+
+SIZE:
+686 Observations, 16 Variables
+
+SOURCE:
+German Breast Cancer Study
+
+REFERENCE:
+Hosmer, D.W. and Lemeshow, S. and May, S. (2008)
+Applied Survival Analysis: Regression Modeling of Time to Event Data:
+Second Edition, John Wiley and Sons Inc., New York, NY
+
+DESCRITPTIVE ABSTRACT:
+Description of the variables in the German Breast Cancer Study (GBCS) dataset shown
+in Table 1.4 of reference text.
+
+Description of the Study:
+Cancer clinical trials are a rich source for examples of applications
+of methods for the analysis of time to event.  Willi Sauerbrei and Patrick
+Royston have graciously provided us with data obtained from the German Breast
+Cancer Study Group, which they used to illustrate methods for building
+prognostic models (Sauerbrei and Royston, 1999).  In the main study,
+a total of 720 patients with primary node positive breast cancer were
+recruited between July 1984, and December 1989, (see Schmoor, Olschweski
+and Schumacher M. 1996 and Schumacher et al. (1994)).
+
+DISCLAIMER:
+This data is also available at the following Wiley's FTP site:
+ftp//ftp.wiley.com/public/sci_tech_med/survival
+
+LIST OF VARIABLES:
+
+Variable	Name		     Description                   Codes/Values
+************************************************************************************
+1               id                   Study ID                      1 - 686
+2               diagdate             Date of Diagnosis             ddmmmyyyy
+3               recdate              Date of Recurrence or         ddmmmyyyy
+                                      of Recurrence Free Survival
+4               deathdate            Date of Death                 ddmmmyyyy
+5               age                  Age at Diagnosis              Years
+6               menopause            Menopausal Status             1 = Yes, 2 = No
+7               hormone              Hormone Therapy               1 = Yes, 2 = No
+8               size                 Tumor Size                    mm
+9               grade                Tumor Grade                   1 - 3
+10              nodes                Number of Nodes               1 - 51
+                                       involved
+11              prog_recp            Number of Progesterone        1 - 2380
+                                       Receptors
+12              estrg_recp           Number of Estrogen            1 - 1144
+                                       Receptors
+13              rectime              Time to Recurrence            Days
+14              censrec              Recurrence Censoring          0 = Censored
+                                                                   1 = Recurrence
+15              survtime             Time to Death                 Days
+16              censdead             Death Censoring               0 = Censored
+                                                                   1 = Death

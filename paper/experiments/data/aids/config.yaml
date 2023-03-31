@@ -1,0 +1,40 @@
+features:
+  - 'age'
+  - 'sex_2'
+  - 'cd4'
+  - 'hemophil_1'
+  - 'priorzdv'
+  - 'strat2_0'
+  - 'strat2_1'
+  - 'txgrp_1'
+  - 'txgrp_2'
+  - 'txgrp_3'
+  - 'txgrp_4'
+  - 'ivdrug_1'
+  - 'ivdrug_2'
+  - 'ivdrug_3'
+  - 'karnof_70'
+  - 'karnof_80'
+  - 'karnof_90'
+  - 'karnof_100'
+  - 'raceth_1'
+  - 'raceth_2'
+  - 'raceth_3'
+  - 'raceth_4'
+  - 'raceth_5'
+outcome:
+  time: 'time'
+  event: 'censor'
+  pos_label: 1
+preprocessing:
+  standardize: true
+  continuous_features:
+    - 'age'
+    - 'cd4'
+    - 'priorzdv'
+split:
+  test_size: 0.2
+  shuffle: true
+partition:
+  type: 'random'
+

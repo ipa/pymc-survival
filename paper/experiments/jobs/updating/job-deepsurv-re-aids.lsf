@@ -1,0 +1,26 @@
+#BSUB -W 6:00
+#BSUB -o /rsrch3/scratch/int_rad_rsch/[user]/logs/pymc-survival
+#BSUB -e /rsrch3/scratch/int_rad_rsch/[user]/logs/pymc-survival
+#BSUB -cwd /rsrch3/home/int_rad_rsch/[user]/src/pymc-survival/docker
+#BSUB -q medium
+#BSUB -n 2
+#BSUB -M 8
+#BSUB -R rusage[mem=8]
+#BSUB -u [email]
+#BSUB -J deepsurv_re_aids
+
+module load singularity/3.7.0
+
+singularity exec \
+    --env WORKING_DIRECTORY=/home/pymc/src/examples/experiments \
+    --env PYTHONPATH=/home/pymc/src \
+    --env PYCOX_DATA_DIR=/tmp/.pycox \
+    --no-home \
+    --bind $HOME/src/pymc-survival:/home/pymc/src \
+    modelling_pymc4-jupyter-pytorch-latest.sif \
+    /bin/bash -c " \
+        export AESARA_FLAGS="base_compiledir=/tmp/.aesara"
+        python /home/pymc/src/examples/experiments/run_retrain_experiment.py deepsurv deepsurv_aids data/aids --runs 3000 --n-partitions 10 \
+    "
+
+

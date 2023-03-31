@@ -1,0 +1,75 @@
+NAME:
+AIDS Clinical Trials Group Study 320 Data (actg320.dat)
+
+SIZE:
+1151 Observations, 16 Variables
+
+SOURCE:
+AIDS Clinical Trials Group
+
+REFERENCE:
+Hosmer, D.W. and Lemeshow, S. and May, S. (2008)
+Applied Survival Analysis: Regression Modeling of Time to Event Data:
+Second Edition, John Wiley and Sons Inc., New York, NY
+
+DESCRITPTIVE ABSTRACT:
+The data come from a double-blind, placebo-controlled trial that compared the
+three-drug regimen of indinavir (IDV), open label zidovudine (ZDV) or
+stavudine (d4T) and lamivudine (3TC) with the two-drug regimen of
+zidovudine or stavudine and lamivudine in HIV-infected patients (Hammer
+et al., 1997).  Patients were eligible for the trial if they had no more
+than 200 CD4 cells per cubic millimeter and at least three months of
+prior zidovudine therapy.  Randomization was stratified by CD4 cell
+count at the time of screening.  The  primary  outcome  measure  was
+time  to  AIDS  defining event or death.  Because efficacy results met a
+pre-specified level of significance at an interim analysis, the trial
+was stopped early.
+
+DISCLAIMER:
+This data is also available at the following Wiley's FTP site:
+ftp//ftp.wiley.com/public/sci_tech_med/survival
+
+LIST OF VARIABLES:
+
+Variable	Name		  Description				        Codes/Values
+***************************************************************************************************************************
+1		id		  	  Identification Code			        1-1156
+2		time		  Time to AIDS diagnosis or death       Days
+3		censor		  Event indicator for AIDS defining	    1 = AIDS defining diagnosis or death
+				      diagnosis or death			        0 = Otherwise
+4		time_d		  Time to death				            Days
+5		censor_d	  Event indicator for death (only)	    1 = Death
+		                                                    0 = Otherwise
+6		tx		      Treatment indicator			        1 = Treatment includes IDV
+									                        0 = Control group (treatment regime without IDV)
+7		txgrp		  Treatment group indicator		        1 = ZDV + 3TC
+									                        2 = ZDV + 3TC + IDV
+									                        3 = d4T + 3TC
+									                        4 = d4T + 3TC + IDV
+8		strat2		  CD4 stratum at screening		        0 = CD4 <= 50
+									                        1 = CD4 > 50
+9		sex		      Sex					                1 = Male
+                                                            2 = Female
+10		raceth		  Race/Ethnicity			            1 = White Non-Hispanic
+									    		            2 = Black Non-Hispanic
+									    		            3 = Hispanic (regardless of race)
+									    		            4 = Asian, Pacific Islander
+									    		            5 = American Indian, Alaskan Native
+									    		            6 = Other/unknown
+11		ivdrug		  IV drug use history			        1 = Never
+									    		            2 = Currently
+									    		            3 = Previously
+12		hemophil	  Hemophiliac				            1 = Yes
+                                                            0 = No
+13		karnof		  Karnofsky Performance Scale		    100 = Normal;no complaint
+										  		                  no evidence of disease
+  									    		            90 = Normal activity possible; minor
+										  		                  signs/symptoms of disease
+ 								 	    		            80 = Normal activity with effort;
+										  		                  some signs/symptoms of disease
+ 								 	    		            70 = Cares for self; normal activity/
+										  		                  active work not possible
+14		cd4		       Baseline CD4 count			        Cells/milliliter
+				                                             (derived from multiple measurements)
+15		priorzdv	  Months of prior ZDV use		        Months
+16		age		      Age at Enrollment			            Years

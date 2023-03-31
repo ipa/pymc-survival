@@ -1,0 +1,167 @@
+---
+title: "Bayesian parametric models for survival prediction in medical applications"
+subtitle: "Overlap of posterior distributions"
+date: "03-29-2023"
+author:
+  - name: Iwan Paolucci, PhD
+    affiliation: "MD Anderson Cancer Center, Department of Interventional Radiology, Houston, TX, USA"
+    orcid: 0000-0002-9393-3015
+toc: true
+format: pdf
+editor: source
+editor_options: 
+  chunk_output_type: inline
+---
+
+\newpage
+# Setup
+
+```{r}
+library(Cairo)
+library(ggplot2)
+library(ggpubr)
+library(ggsci)
+library(dplyr)
+library(stringr)
+```
+
+```{r}
+knitr::opts_chunk$set(dev.args = list(png = list(type = "cairo")),
+                      fig.path='out/figs/ovi/', dev = c('pdf', 'png'), dpi = 300)
+```
+
+# Load data
+
+```{r, include=FALSE}
+redownload <- FALSE
+
+if (redownload){
+  src_folder <- 'U:/src/pymc-survival/examples/experiments/results_retrain'
+  
+  
+  data.exp <- rbind(
+    read.csv(paste(src_folder, 'pm_exp_gbcs/ovi.csv', sep = '/')) %>% mutate(experiment = 'gbcs'),
+    read.csv(paste(src_folder, 'pm_exp_whas/ovi.csv', sep = '/')) %>% mutate(experiment = 'whas'),
+    read.csv(paste(src_folder, 'pm_exp_pbc/ovi.csv', sep = '/')) %>% mutate(experiment = 'pbc'),
+    read.csv(paste(src_folder, 'pm_exp_aids/ovi.csv', sep = '/')) %>% mutate(experiment = 'actg')
+  )
+  
+  
+  data.wb <- rbind(
+    read.csv(paste(src_folder, 'pm_wb_gbcs/ovi.csv', sep = '/')) %>% mutate(experiment = 'gbcs', model = 'pm_wb'),
+    read.csv(paste(src_folder, 'pm_wb_whas/ovi.csv', sep = '/')) %>% mutate(experiment = 'whas', model = 'pm_wb'),
+    read.csv(paste(src_folder, 'pm_wb_pbc/ovi.csv', sep = '/')) %>% mutate(experiment = 'pbc', model = 'pm_wb'),
+    read.csv(paste(src_folder, 'pm_wb_aids/ovi.csv', sep = '/')) %>% mutate(experiment = 'actg', model = 'pm_wb')
+  )
+  
+  data <- rbind(data.exp, data.wb)
+  
+  data <- data %>% 
+    mutate(
+      experiment_lbl = as.factor(experiment),
+      model_lbl = as.factor(model)
+    )
+  
+  save(data, file = 'data/ovi.rds')
+}
+```
+
+```{r}
+load(file = 'data/ovi.rds')
+```
+
+```{r}
+data$experiment_lbl <- toupper(data$experiment_lbl)
+
+data$model_lbl <- factor(data$model_lbl, labels = c('PM Exponential', 'PM Weibull'))
+
+```
+
+
+# Functions
+
+```{r}
+plot_ovi <- function(.data, experiment_str, model_str){
+  
+  data.grouped <- .data %>%
+    filter(experiment == experiment_str) %>%
+    mutate(
+      var_lbl = factor(str_sub(var, 8, -1)),
+      experiment_lbl = toupper(experiment_lbl)
+    ) %>%
+    group_by(experiment_lbl, model_lbl, var_lbl, partition) %>%
+    summarise(
+      n = n(),
+      median = median(ovi),
+      median_lower = wilcox.test(ovi, conf.int = TRUE)$conf.int[1],
+      median_upper = wilcox.test(ovi, conf.int = TRUE)$conf.int[2],
+      model = first(model)
+    )
+  
+  data_filtered <- data.grouped %>% filter(model == model_str) 
+
+  plt.all <- ggline(data = data_filtered, 
+                    x = 'partition', y = 'median', color = 'var_lbl', group = 'var_lbl',
+               facet.by = c('experiment_lbl', 'model_lbl'),
+               add.params = list(color = "var_lbl", size = 1, width = 0.1),
+               palette = 'hls', size = 1, plot_type = 'b', alpha = 0.5) +
+    geom_ribbon(data = data_filtered, aes(ymin = median_lower, ymax = median_upper,
+                                           fill = var_lbl), alpha=0.2, outline.type = 'both')
+  
+  plt.all <- ggpar(plt.all, ylab = 'OVI', xlab = 'Partition', legend.title = "Variable")
+  
+  return (plt.all)
+}
+
+```
+
+
+# WHAS
+
+```{r}
+data.whas <- data %>% 
+  filter(!var %in% c('lambda_yrgrp_1975 & 1978', 'lambda_yrgrp_1981 & 1984', 'lambda_yrgrp_1986 & 1988'))     
+```
+
+
+```{r plt-ovi-whas, fig.width=7, fig.asp=0.6}
+
+plot_ovi(data.whas, 'whas', 'pm_exp')
+
+plot_ovi(data.whas, 'whas', 'pm_wb')
+
+```
+
+# GBCS
+
+```{r plt-ovi-gbcs, fig.width=9, fig.asp=0.6}
+
+plot_ovi(data, 'gbcs', 'pm_exp')
+
+plot_ovi(data, 'gbcs', 'pm_wb')
+
+
+```
+
+
+# PBC
+
+```{r plt-ovi-pbc, fig.width=9, fig.asp=0.6}
+
+plot_ovi(data, 'pbc', 'pm_exp')
+
+plot_ovi(data, 'pbc', 'pm_wb')
+
+
+```
+
+# ACTG
+
+```{r plt-ovi-ACTG, fig.width=9, fig.asp=0.6}
+
+plot_ovi(data, 'actg', 'pm_exp')
+
+plot_ovi(data, 'actg', 'pm_wb')
+
+
+```

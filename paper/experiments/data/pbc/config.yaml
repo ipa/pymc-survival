@@ -1,0 +1,45 @@
+features:
+  - 'age'
+  - 'bilirubin'
+  - 'cholesterol'
+  - 'albumin'
+  - 'copper'
+  - 'alkphosphotase'
+  - 'sgot'
+  - 'triglycerides'
+  - 'platelet'
+  - 'prothrombin'
+  - 'edema_0.0'
+  - 'edema_0.5'
+  - 'edema_1.0'
+  - 'histologic_1.0'
+  - 'histologic_2.0'
+  - 'histologic_3.0'
+  - 'histologic_4.0'
+  - 'trt_1.0'
+  - 'sex_1.0'
+  - 'ascites_1.0'
+  - 'hepatomegaly_1.0'
+  - 'spiders_1.0'
+outcome:
+  time: 'time'
+  event: 'event'
+  pos_label: 1
+preprocessing:
+  standardize: true
+  continuous_features:
+    - 'age'
+    - 'bilirubin'
+    - 'cholesterol'
+    - 'albumin'
+    - 'copper'
+    - 'alkphosphotase'
+    - 'sgot'
+    - 'triglycerides'
+    - 'platelet'
+    - 'prothrombin'
+split:
+  test_size: 0.2
+  shuffle: true
+partition:
+  type: 'random'

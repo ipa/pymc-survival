@@ -1,0 +1,73 @@
+---
+title: "Bayesian parametric models for survival prediction in medical applications"
+subtitle: "Sample size calculation"
+date: "12-02-2022"
+author:
+  - name: Iwan Paolucci, PhD
+    affiliation: "MD Anderson Cancer Center, Department of Interventional Radiology, Houston, TX, USA"
+    orcid: 0000-0002-9393-3015
+toc: true
+format: pdf
+editor: source
+---
+
+# Setup
+
+```{r}
+library(pwr)
+library(TOSTER)
+```
+
+# Assumptions
+
+-   This study involves multiple testing of certain performance thresholds. Bonferroni correction is used to account for multiple testing.
+
+\newpage
+
+# Sample size for comparative experiments
+
+```{r}
+sample_sd <- 0.025
+mu_diff <- 0.02
+n_comparisons <- 15
+
+pwr.calc <- pwr.t.test(
+  d = mu_diff / sample_sd,
+  power = 0.8,
+  sig.level = 0.05 / n_comparisons,
+  type = 'two.sample',
+  alternative = 'two.sided'
+)
+
+pwr.calc$n_comparisons <- n_comparisons
+pwr.calc$n_adjusted <- pwr.calc$n * 1.15
+
+pwr.calc
+
+```
+
+\newpage
+
+# Sample size for model re-training
+
+
+```{r}
+sample_sd <- 0.025
+n_comparisons <- 3
+
+pwr.calc <- power_t_TOST(
+  n = NULL,
+  delta = 0,
+  sd = sample_sd,
+  low_eqbound = -0.01,
+  high_eqbound = 0.01,
+  alpha = 0.05 / n_comparisons ,
+  power = 0.8,
+  type = "two.sided"
+)
+
+pwr.calc$n_comparisions <- n_comparisons
+pwr.calc$n_adjusted <- pwr.calc$n * 1.15
+
+pwr.calc
+```

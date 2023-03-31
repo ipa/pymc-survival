@@ -1,0 +1,2 @@
+class PyMCModelsError(Exception):
+    pass

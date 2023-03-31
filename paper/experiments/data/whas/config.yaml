@@ -1,0 +1,28 @@
+features:
+  - 'age'
+  - 'sex'
+  - 'cpk'
+  - 'sho'
+  - 'chf'
+  - 'miord'
+  - 'mitype_1'
+  - 'mitype_2'
+  - 'mitype_3'
+  - 'yrgrp_1975 & 1978'
+  - 'yrgrp_1981 & 1984'
+  - 'yrgrp_1986 & 1988'
+outcome:
+  time: 'lenstay'
+  event: 'dstat'
+  pos_label: 1
+preprocessing:
+  standardize: true
+  continuous_features:
+    - 'age'
+    - 'cpk'
+split:
+  test_size: 0.2
+  shuffle: true
+partition:
+  type: 'var'
+

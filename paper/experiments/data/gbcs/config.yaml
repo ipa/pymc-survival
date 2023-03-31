@@ -1,0 +1,29 @@
+features:
+  - 'age'
+  - 'menopause_2'
+  - 'hormone_2'
+  - 'size'
+  - 'nodes'
+  - 'prog_recp'
+  - 'estrg_recp'
+  - 'grade_1'
+  - 'grade_2'
+  - 'grade_3'
+outcome:
+  time: 'survtime'
+  event: 'censdead'
+  pos_label: 1
+preprocessing:
+  standardize: true
+  continuous_features:
+    - 'age'
+    - 'size'
+    - 'nodes'
+    - 'prog_recp'
+    - 'estrg_recp'
+split:
+  test_size: 0.2
+  shuffle: true
+partition:
+  type: 'random'
+    
