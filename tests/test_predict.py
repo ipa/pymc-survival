@@ -1,5 +1,3 @@
-import aesara
-aesara.compile.mode.Mode(linker='py', optimizer='fast_compile')
 import pmsurv
 import pmsurv.models
 import pymc as pm

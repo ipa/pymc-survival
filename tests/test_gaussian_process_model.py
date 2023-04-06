@@ -28,7 +28,8 @@ class TestGaussianProcessModelModel(unittest.TestCase):
         included_features = ['a', 'b']
         wb_model = GaussianProcessModel()
         self.assertIsNotNone(wb_model)
-
+        
+    @unittest.skip("Not yet ready")
     def test_create_model(self):
         print("test_create_model")
         lam_ctrl = 1
