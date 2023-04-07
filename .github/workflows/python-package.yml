@@ -13,7 +13,7 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: ghcr.io/ipa/pymc-survival:pr-5
     strategy:
       fail-fast: false
       matrix:
@@ -21,16 +21,17 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
-      with:
-        python-version: ${{ matrix.python-version }}
+    #- name: Set up Python ${{ matrix.python-version }}
+    #  uses: actions/setup-python@v3
+    #  with:
+    #    python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        python -m pip install flake8 pytest build
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         python -m pip install -e .
+    #    python -m pip install --upgrade pip
+    #    python -m pip install flake8 pytest build
+    #    if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+       # python -m pip install -e .
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
