@@ -23,6 +23,9 @@ jobs:
 
 
     steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      
     #- uses: actions/checkout@v3
     #- name: Build the Docker image
     #  run: docker build . --file Dockerfile --target pymc-cuda --tag pymc-survival:base-$(date +%s)
