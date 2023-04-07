@@ -2,13 +2,14 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "create-dockerimage" ]
     paths:
       - Dockerfile
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "create-dockerimage"  ]
     paths:
       - Dockerfile
+  workflow_dispatch:
 
 jobs:
 
