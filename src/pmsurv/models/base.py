@@ -36,15 +36,15 @@ class BayesianModel(BaseEstimator):
 
         inference_args : dict (defaults to None)
             arguments to be passed to the inference methods
-            Check the PyMC3 docs to see what is permitted.
+            Check the PyMC docs to see what is permitted.
 
         num_advi_sample_draws : int (defaults to 10000)
             Number of samples to draw from ADVI approximation after it has been fit;
             not used if inference_type != 'advi'
         """
-        if 'type' not in inference_args:
+        if 'type' not in inference_args or 'nuts_sampler' in inference_args:
             self.__nuts_inference(inference_args)
-        elif inference_args['type'] == 'nuts' or inference_args['type'] == 'blackjax':
+        elif inference_args['type'] == 'nuts':
             self.__nuts_inference(inference_args)
         elif inference_args['type'] == 'map':
             logger.info('fit with MAP')
@@ -58,25 +58,12 @@ class BayesianModel(BaseEstimator):
         Parameters
         ----------
         inference_args : dict
-            arguments to be passed to the PyMC3 sample method
-            See PyMC3 doc for permissible values.
+            arguments to be passed to the PyMC sample method
+            See PyMC doc for permissible values.
         """
         with self.cached_model:
-            if 'type' not in inference_args:
-                self.trace = pm.sample(**inference_args, random_seed=0)
-            elif inference_args['type'] == 'nuts':
-                inference_args.pop('type')
-                self.trace = pm.sample(**inference_args, random_seed=0)
-            elif inference_args['type'] == 'blackjax':
-                inference_args.pop('type')
-                inference_args.pop('cores')
-                import pymc.sampling_jax
-                if 'progressbar' in inference_args:
-                    inference_args.pop('progressbar')
-                if 'return_inferencedata' in inference_args:
-                    inference_args.pop('return_inferencedata')
+            self.trace = pm.sample(**inference_args, random_seed=0)
 
-                self.trace = pm.sampling_jax.sample_numpyro_nuts(**inference_args)
 
     @staticmethod
     def _get_default_inference_args():
@@ -104,7 +91,8 @@ class BayesianModel(BaseEstimator):
             'cores': 1,
             'return_inferencedata': True,
             'progressbar': False,
-            'type': 'nuts'
+            'type': 'nuts',
+            'nuts_sampler': 'pymc'
         }
         return inference_args
 

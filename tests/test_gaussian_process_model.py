@@ -7,13 +7,14 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from pathlib import Path
 import numpy as np
+from sklearn.model_selection import train_test_split
 
 from pmsurv.models.gaussian_process import GaussianProcessModel
 import tests.syntheticdata
 
 warnings.simplefilter("ignore")
 
-class TestGaussianProcessModelModel(unittest.TestCase):
+class TestGaussianProcessModel(unittest.TestCase):
 
     def test_setup(self):
         print("test_setup")
@@ -29,7 +30,6 @@ class TestGaussianProcessModelModel(unittest.TestCase):
         wb_model = GaussianProcessModel()
         self.assertIsNotNone(wb_model)
         
-    @unittest.skip("Not yet ready")
     def test_create_model(self):
         print("test_create_model")
         lam_ctrl = 1
@@ -39,8 +39,8 @@ class TestGaussianProcessModelModel(unittest.TestCase):
         y[:, 1] = 1 - y[:, 1]  # inverse
 
         wb_model = GaussianProcessModel()
-        fit_args = {'draws': 100, 'tune': 50, 'chains': 2, 'cores': 1,
-                    'return_inferencedata': True, 'type': 'blackjax' }
+        fit_args = {'draws': 100, 'tune': 100, 'chains': 2, 'cores': 1,
+                    'return_inferencedata': True, 'nuts_sampler': 'nutpie' }
         wb_model.fit(X, y, inference_args=fit_args)
 
         summary = az.summary(wb_model.trace, filter_vars='like', var_names=["~f"])
@@ -48,37 +48,31 @@ class TestGaussianProcessModelModel(unittest.TestCase):
 
         self.assertIsNotNone(wb_model)
 
-    @unittest.skip("Not yet ready")
     def test_fit(self):
         print("test_fit")
-        included_features = ['a']
         lam_ctrl = 1
         lam_trt = 2.5
         k = 1
         X, y = tests.syntheticdata.synthetic_data_weibull(lam_ctrl=lam_ctrl, lam_trt=lam_trt, k=k)
         y[:, 1] = 1 - y[:, 1]  # inverse
-        print(X.shape, y.shape)
-        fit_args = {'draws': 100, 'tune': 50, 'target_accept': 0.8, 'chains': 2, 'cores': 1,
-                    'return_inferencedata': True, 'type': 'map', 'progressbar': True }
-        wb_model = GaussianProcessModel()
-        wb_model.fit(X, y, inference_args=fit_args)
 
+        fit_args = {'draws': 100, 'tune': 50, 'target_accept': 0.85,  'chains': 2, 'cores': 1,
+                    'return_inferencedata': True, 'nuts_sampler': 'nutpie' }
+        try:
+            wb_model = GaussianProcessModel()
+            wb_model.fit(X, y, inference_args=fit_args)
+        except:
+            self.assertTrue(False)
         summary = az.summary(wb_model.trace, filter_vars='like', var_names=["~f"])
         print(summary)
-        c_index = wb_model.score(X[:10,:], y[:10,:])
-        print(c_index)
-        # self.assertAlmostEqual(np.exp(summary['mean']['lambda_intercept']), lam_ctrl, 0)
-        # self.assertAlmostEqual(np.exp(summary['mean']['lambda_det_pred']), lam_trt - lam_ctrl, 0)
 
-        # plt.plot(wb_model.approx.hist)
-        # plt.show()
 
-    @unittest.skip("Not yet ready")
     def test_save_and_load(self):
         print("test_save_and_load")
         X, y = tests.syntheticdata.synthetic_data_random()
         print(X.shape, y.shape)
-        fit_args = {'draws': 200, 'tune': 100, 'chains': 2, 'cores': 1, 'return_inferencedata': True, 'type': 'blackjax'}
+        fit_args = {'draws': 100, 'tune': 100, 'chains': 2, 'cores': 1,
+                    'return_inferencedata': True, 'nuts_sampler': 'nutpie' }
         wb_model = GaussianProcessModel()
         wb_model.fit(X, y, inference_args=fit_args)
 
@@ -97,22 +91,32 @@ class TestGaussianProcessModelModel(unittest.TestCase):
         summary_2 = az.summary(wb_model2.trace, filter_vars='like', var_names=["~f"])
         print(summary_1)
         print(summary_2)
-        # self.assertAlmostEqual(summary_1['mean']['lambda_intercept'], summary_2['mean']['lambda_intercept'])
-        # self.assertAlmostEqual(summary_1['mean']['lambda_det'], summary_2['mean']['lambda_det'])
+        self.assertAlmostEqual(summary_1['mean']['lambda_intercept'], summary_2['mean']['lambda_intercept'])
+        self.assertAlmostEqual(summary_1['mean']['eta'], summary_2['mean']['eta'])
+        self.assertAlmostEqual(summary_1['mean']['eta_log__'], summary_2['mean']['eta_log__'])
+        self.assertAlmostEqual(summary_1['mean']['ell_log__[0]'], summary_2['mean']['ell_log__[0]'])
+        self.assertAlmostEqual(summary_1['mean']['ell[0]'], summary_2['mean']['ell[0]'])
 
-    @unittest.skip("Not yet ready")
     def test_score(self):
         print("test_fit_1")
         included_features = ['a']
         X, y = tests.syntheticdata.synthetic_data_weibull(lam_ctrl=1, lam_trt=2.5, k=1)
         y[:, 1] = 1 - y[:, 1]  # inverse
-        print(X.shape, y.shape)
-        fit_args = {'draws': 1000, 'tune': 500, 'chains': 2, 'cores': 1, 'return_inferencedata': True,
-                    'progressbar': True, 'type':'blackjax' }
-        wb_model = GaussianProcessModel()
-        wb_model.fit(X, y, inference_args=fit_args)
 
-        c_index = wb_model.score(X[:10,:], y[:10,:])
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+        X_train = X_train.values.astype(float)
+        y_train = y_train.astype(float)
+        X_test = X_test.values.astype(float)
+        y_test = y_test.astype(float)
+
+        fit_args = {'draws': 500, 'tune': 250, 'target_accept': 0.85, 'chains': 2, 'cores': 1,
+                    'return_inferencedata': True, 'nuts_sampler': 'nutpie' }
+        wb_model = GaussianProcessModel()
+        wb_model.fit(X_train, y_train, inference_args=fit_args)
+
+
+        c_index = wb_model.score(X_test, y_test)
         print(f"c-index = {c_index}")
         self.assertGreater(c_index, 0.725)
 
