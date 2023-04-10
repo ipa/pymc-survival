@@ -39,6 +39,6 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        python -m unittest test/test_*
+        python -m unittest tests/test_*
     - name: Build package
       run: python -m build
