@@ -13,7 +13,8 @@ on:
 jobs:
   build:
 
-    runs-on: ghcr.io/ipa/pymc-survival:pr-5
+    runs-on: ubuntu-latest
+    container: ghcr.io/ipa/pymc-survival:pr-5
     strategy:
       fail-fast: false
       matrix:
