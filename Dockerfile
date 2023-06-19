@@ -21,7 +21,7 @@ RUN pip install 'arviz>=0.12.0' \
                 numpyro  \
                 'pandas>=1.0.0' \
                 pqdm \
-                "pymc>=5.0" \
+                "pymc>=5.1.2" \
                 'pyyaml>=6.0' \
                 'scipy>=1.7'\
                 'scikit-learn>=1.0.0' \
