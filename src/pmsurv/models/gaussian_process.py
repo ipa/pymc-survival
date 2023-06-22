@@ -137,14 +137,13 @@ class GaussianProcessModel(BayesianModel):
             self.cached_model = self.create_model()
 
         with self.cached_model:
+            pm.set_data({
+                'model_input': X
+            })
+
             f_pred = self.gp.conditional("f_pred", X, jitter=1e-4)
             lambda_intercept = self.cached_model.named_vars['lambda_intercept']
             p_pred = pm.Deterministic("lambda_det_pred", pm.math.exp(lambda_intercept + f_pred))
-
-        # with self.cached_model:
-        #     pm.set_data({
-        #         'model_input': X
-        #     })
 
         ppc = pm.sample_posterior_predictive(self.trace, model=self.cached_model, return_inferencedata=False,
                                              random_seed=0, var_names=["f_pred", "lambda_det_pred"])
