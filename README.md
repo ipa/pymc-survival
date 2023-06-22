@@ -6,6 +6,10 @@
 
 PyMC Survival is a collection of Bayesian parametric survival models written in Python using the scikit-learn API. The library is based on [PyMC](https://github.com/pymc-devs/pymc). 
 
+## Create Docker container
+
+docker build --build-arg GIT_ACCESS_TOKEN=[GITHUB_TOKEN] --target pymc-survival-paper -t ipaoluccimda/pymc-survival:initial-paper .
+
 ## Installation
 
 PyMC Survival requires Python 3.8 or higher (lower versions might work but are not tested). 

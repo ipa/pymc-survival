@@ -45,6 +45,7 @@ class BayesianModel(BaseEstimator):
         if 'type' not in inference_args or 'nuts_sampler' in inference_args:
             self.__nuts_inference(inference_args)
         elif inference_args['type'] == 'nuts':
+            inference_args.pop('type')
             self.__nuts_inference(inference_args)
         elif inference_args['type'] == 'map':
             logger.info('fit with MAP')
@@ -63,7 +64,6 @@ class BayesianModel(BaseEstimator):
         """
         with self.cached_model:
             self.trace = pm.sample(**inference_args, random_seed=0)
-
 
     @staticmethod
     def _get_default_inference_args():
@@ -91,8 +91,7 @@ class BayesianModel(BaseEstimator):
             'cores': 1,
             'return_inferencedata': True,
             'progressbar': False,
-            'type': 'nuts',
-            'nuts_sampler': 'pymc'
+            'nuts_sampler': 'nutpie'
         }
         return inference_args
 
