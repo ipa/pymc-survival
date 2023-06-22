@@ -22,6 +22,8 @@ def train_model(X_train, y_train, config, train_kwargs):
 
     parameters = {
         'selector__k': Integer(1, X_train.shape[1]),
+        'model__priors_sd': Real(0.1, 2, prior='log-uniform'),
+        'model__k_constant': Categorical([True, False])
     }
 
     fit_params = {

@@ -11,7 +11,7 @@ from pmsurv.models.weibull_base import WeibullModelBase
 
 
 class WeibullModelNN(WeibullModelBase):
-    def __init__(self, with_k=False, n_hidden_layers=1):
+    def __init__(self, k_constant=False, n_hidden_layers=1, priors_sd=0.25):
         super(WeibullModelNN, self).__init__()
         self.column_names = None
         self.max_time = None
@@ -21,7 +21,8 @@ class WeibullModelNN(WeibullModelBase):
         self.num_pred = None
         self.n_hidden_layers = n_hidden_layers
         self.layers = []
-        self.with_k = with_k
+        self.k_constant = k_constant
+        self.priors_sd = priors_sd
   
     def __str__(self):
         str_output = ""
@@ -29,19 +30,18 @@ class WeibullModelNN(WeibullModelBase):
             str_output += f'Layer %i:\t %s \n' % (idx, str(l))
         return str_output
 
-    @staticmethod
-    def _get_default_priors():
+    def _get_priors(self):
         return {
-            'k_coefs': False,
+            'k_constant': False,
             'n_hidden_layers': [5, 5, 5],
             'lambda_mu': 1,
-            'lambda_sd': 10,
+            'lambda_sd': self.priors_sd * 40,
             'k_mu': 1,
-            'k_sd': 10,
+            'k_sd': self.priors_sd * 40,
             'coefs_mu': 0,
-            'coefs_sd': 0.25,
+            'coefs_sd': self.priors_sd,
             'lambda_coefs_mu': 0,
-            'lambda_coefs_sd': 0.25
+            'lambda_coefs_sd': self.priors_sd
         }
 
 
@@ -49,9 +49,9 @@ class WeibullModelNN(WeibullModelBase):
         if self.priors is None:
             self.priors = priors
         if self.priors is None:
-            self.priors = WeibullModelNN._get_default_priors()
+            self.priors = self._get_priors()
         self.priors['n_hidden_layers'] = [self.num_pred for i in range(self.n_hidden_layers)]
-        self.priors['k_coefs'] = self.with_k
+        self.priors['k_constant'] = self.k_constant
 
         print(self.priors['n_hidden_layers'])
         n_hidden_layers = copy.deepcopy(self.priors['n_hidden_layers'])
@@ -102,12 +102,12 @@ class WeibullModelNN(WeibullModelBase):
 
                 lambda_ = pm.Deterministic("lambda_det", pm.math.exp(lambda_intercept + x_hidden[:, 0]))
 
-                print('With k %s' % self.priors['k_coefs'])
-                if self.priors['k_coefs']:
-                    k_ = pm.Deterministic("k_det", pm.math.exp(k_intercept + x_hidden[:, 1]))
-                else:
+                print('Keep k constant = %s' % self.priors['k_constant'])
+                if self.priors['k_constant']:
                     k_constant = 0.0
-                    k_ = pm.Deterministic("k_det", pm.math.exp(k_intercept + (x_hidden[:,1] * k_constant)))
+                    k_ = pm.Deterministic("k_det", pm.math.exp(k_intercept + (x_hidden[:, 1] * k_constant)))
+                else:
+                    k_ = pm.Deterministic("k_det", pm.math.exp(k_intercept + x_hidden[:, 1]))
 
                 censored = pm.math.eq(censor_, 1)
                 y = pm.Weibull("y", alpha=k_[~censored], beta=lambda_[~censored],

@@ -85,7 +85,7 @@ def run_experiment(model, dataset, config, train_kwargs):
 
     if config['preprocessing']['standardize']:
         logger.info("Standardize data")
-        X_train, X_test = utils.standardize(X_train, X_test, config)
+        X_train, X_test, _ = utils.standardize(X_train, X_test, config)
 
     pipeline, parameters, fit_params = train_fun[model](X_train, y_train, config, train_kwargs)
     n_cv = 5

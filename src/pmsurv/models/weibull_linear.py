@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 class WeibullModelLinear(WeibullModelBase):
-    def __init__(self, with_k=False):
+    def __init__(self, k_constant=False, priors_sd=1):
         super(WeibullModelLinear, self).__init__()
         self.column_names = None
         self.max_time = None
@@ -15,21 +15,20 @@ class WeibullModelLinear(WeibullModelBase):
         self.fit_args = None
         self.num_training_samples = None
         self.num_pred = None
-        self.with_k = with_k
+        self.k_constant = k_constant
+        self.priors_sd = priors_sd
 
-    @staticmethod
-    def _get_default_priors():
+    def _get_priors(self):
         return {
-            'k_coefs': False,
-            'uncertainty': [],
+            'k_constant': True,
             'lambda_mu': 1,
-            'lambda_sd': 1,
+            'lambda_sd': self.priors_sd,
             'k_mu': 1,
-            'k_sd': 1,
+            'k_sd': self.priors_sd,
             'lambda_coefs_mu': 0,
-            'lambda_coefs_sd': 1,
+            'lambda_coefs_sd': self.priors_sd,
             'k_coefs_mu': 0,
-            'k_coefs_sd': 1
+            'k_coefs_sd': self.priors_sd
         }
 
 
@@ -44,8 +43,8 @@ class WeibullModelLinear(WeibullModelBase):
         if self.priors is None:
             self.priors = priors
         if self.priors is None:
-            self.priors = WeibullModelLinear._get_default_priors()
-        self.priors['k_coefs'] = self.with_k
+            self.priors = self._get_priors()
+        self.priors['k_constant'] = self.k_constant
 
         model = pm.Model()
         with model:
@@ -77,7 +76,7 @@ class WeibullModelLinear(WeibullModelBase):
                 lambda_coefs.append(model_input[:, i] * lambda_coef)
             lambda_det = pm.Deterministic("lambda_det", pm.math.exp(lambda_intercept + sum(lambda_coefs)))
 
-            if self.priors['k_coefs']:
+            if not self.priors['k_constant']:
                 k_coefs = []
                 for i, cn in enumerate(self.column_names):
                     feature_name = f'k_{cn}'

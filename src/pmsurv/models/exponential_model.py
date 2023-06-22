@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class ExponentialModel(BayesianModel):
-    def __init__(self):
+    def __init__(self, priors_sd=1):
         super(ExponentialModel, self).__init__()
         self.column_names = None
         self.max_time = None
@@ -24,14 +24,14 @@ class ExponentialModel(BayesianModel):
         self.fit_args = None
         self.num_training_samples = None
         self.num_pred = None
+        self.priors_sd = priors_sd
 
-    @staticmethod
-    def _get_default_priors():
+    def _get_priors(self):
         return {
             'lambda_mu': 1,
-            'lambda_sd': 1,
+            'lambda_sd': self.priors_sd,
             'lambda_coefs_mu': 0,
-            'lambda_coefs_sd': 1
+            'lambda_coefs_sd': self.priors_sd
         }
 
     def __str__(self):
@@ -45,7 +45,7 @@ class ExponentialModel(BayesianModel):
         if self.priors is None:
             self.priors = priors
         if self.priors is None:
-            self.priors = ExponentialModel._get_default_priors()
+            self.priors = self._get_priors()
 
         model = pm.Model()
         with model:
