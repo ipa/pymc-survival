@@ -11,7 +11,6 @@ class WeibullModelLinear(WeibullModelBase):
         super(WeibullModelLinear, self).__init__()
         self.column_names = None
         self.max_time = None
-        # self.priors = None
         self.fit_args = None
         self.num_training_samples = None
         self.num_pred = None
@@ -50,29 +49,29 @@ class WeibullModelLinear(WeibullModelBase):
         with model:
             if X is None:
                 X = np.zeros([self.num_training_samples, self.num_pred])
+            model_input = pm.MutableData("model_input", X).astype('float32')
 
-            model_input = pm.MutableData("model_input", X)
             if y is not None:
-                time_censor_ = pm.MutableData("time_censor", y[y[:, 1] == 1, 0])
-                time_uncensor_ = pm.MutableData("time_uncensor", y[y[:, 1] == 0, 0])
+                time_censor_ = pm.MutableData("time_censor", y[y[:, 1] == 1, 0]).astype('float32')
+                time_uncensor_ = pm.MutableData("time_uncensor", y[y[:, 1] == 0, 0]).astype('float32')
                 censor_ = pm.MutableData("censor", y[:, 1].astype(np.int8))
 
         with model:
             logger.info("Priors: {}".format(str(self.priors)))
             lambda_intercept = pm.Normal("lambda_intercept",
                                          mu=self.priors['lambda_mu'] if f'lambda_intercept_mu' not in self.priors else self.priors[f'lambda_intercept_mu'],
-                                         sigma=self.priors['lambda_sd'] if f'lambda_intercept_sd' not in self.priors else self.priors[f'lambda_intercept_sd'])
+                                         sigma=self.priors['lambda_sd'] if f'lambda_intercept_sd' not in self.priors else self.priors[f'lambda_intercept_sd'])#.astype('float32')
 
             k_intercept = pm.Normal('k_intercept',
                                     mu=self.priors['k_mu'] if f'k_intercept_mu' not in self.priors else self.priors[f'k_intercept_mu'],
-                                    sigma=self.priors['k_sd'] if f'k_intercept_sd' not in self.priors else self.priors[f'k_intercept_sd'])
+                                    sigma=self.priors['k_sd'] if f'k_intercept_sd' not in self.priors else self.priors[f'k_intercept_sd'])#.astype('float32')
 
             lambda_coefs = []
             for i, cn in enumerate(self.column_names):
                 feature_name = f'lambda_{cn}'
                 lambda_coef = pm.Normal(feature_name,
                                         mu=self.priors['lambda_coefs_mu'] if f'{feature_name}_mu' not in self.priors else self.priors[f'{feature_name}_mu'],
-                                        sigma=self.priors['lambda_coefs_sd'] if f'{feature_name}_sd' not in self.priors else self.priors[f'{feature_name}_sd'])
+                                        sigma=self.priors['lambda_coefs_sd'] if f'{feature_name}_sd' not in self.priors else self.priors[f'{feature_name}_sd'])#.astype('float32')
                 lambda_coefs.append(model_input[:, i] * lambda_coef)
             lambda_det = pm.Deterministic("lambda_det", pm.math.exp(lambda_intercept + sum(lambda_coefs)))
 
@@ -82,12 +81,14 @@ class WeibullModelLinear(WeibullModelBase):
                     feature_name = f'k_{cn}'
                     k_coef = pm.Normal(feature_name,
                                             mu=self.priors['k_coefs_mu'] if f'{feature_name}_mu' not in self.priors else self.priors[f'{feature_name}_mu'],
-                                            sigma=self.priors['k_coefs_sd'] if f'{feature_name}_sd' not in self.priors else self.priors[f'{feature_name}_sd'])
+                                            sigma=self.priors['k_coefs_sd'] if f'{feature_name}_sd' not in self.priors else self.priors[f'{feature_name}_sd'])#.astype('float32')
                     k_coefs.append(model_input[:, i] * k_coef)
                 k = pm.math.sum(k_coefs, axis=0)
             else:
                 k = pm.math.zeros_like(lambda_det)
             k_det = pm.Deterministic("k_det", pm.math.exp(k_intercept + k))
+
+            print(k.dtype, lambda_det.dtype)
 
             if y is not None:
                 censored_ = pm.math.eq(censor_, 1)

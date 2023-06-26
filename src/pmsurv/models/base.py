@@ -1,6 +1,6 @@
 # Adaptet from pymc-lean: https://github.com/pymc-learn/pymc-learn/blob/master/pmlearn/base.py
 import logging
-
+import os
 from sklearn.base import BaseEstimator
 import pymc as pm
 import arviz as az
@@ -62,6 +62,7 @@ class BayesianModel(BaseEstimator):
             arguments to be passed to the PyMC sample method
             See PyMC doc for permissible values.
         """
+        logger.info(f"Using {inference_args['nuts_sampler']} sampler with {inference_args['progressbar']}")
         with self.cached_model:
             self.trace = pm.sample(**inference_args, random_seed=0)
 
@@ -83,6 +84,9 @@ class BayesianModel(BaseEstimator):
         draws : int (defaults to 2000)
             number of samples to draw
         """
+        nuts_sampler = os.environ.get('PMSURV_SAMPLER')
+        progress_bar = os.environ.get('PMSURV_PROGRESSBAR')
+
         inference_args = {
             'draws': 2000,
             'tune': 1000,
@@ -90,8 +94,8 @@ class BayesianModel(BaseEstimator):
             'chains': 2,
             'cores': 1,
             'return_inferencedata': True,
-            'progressbar': False,
-            'nuts_sampler': 'nutpie'
+            'progressbar': False if progress_bar is None else progress_bar,
+            'nuts_sampler': 'nutpie' if nuts_sampler is None else nuts_sampler
         }
         return inference_args
 
