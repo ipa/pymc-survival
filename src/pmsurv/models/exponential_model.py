@@ -63,16 +63,16 @@ class ExponentialModel(BayesianModel):
 
             lambda_intercept = pm.Normal("lambda_intercept",
                                          mu=self.priors['lambda_mu'] if f'lambda_intercept_mu' not in self.priors else self.priors[f'lambda_intercept_mu'],
-                                         sigma=self.priors['lambda_sd'] if f'lambda_intercept_sd' not in self.priors else self.priors[f'lambda_intercept_sd'])#.astype('float32')
+                                         sigma=self.priors['lambda_sd'] if f'lambda_intercept_sd' not in self.priors else self.priors[f'lambda_intercept_sd']).astype('float32')
 
             lambda_coefs = []
             for i, cn in enumerate(self.column_names):
                 feature_name = f'lambda_{cn}'
                 lambda_coef = pm.Normal(feature_name,
                                         mu=self.priors['lambda_coefs_mu'] if f'{feature_name}_mu' not in self.priors else self.priors[f'{feature_name}_mu'],
-                                        sigma=self.priors['lambda_coefs_sd'] if f'{feature_name}_sd' not in self.priors else self.priors[f'{feature_name}_sd'])#.astype('float32')
+                                        sigma=self.priors['lambda_coefs_sd'] if f'{feature_name}_sd' not in self.priors else self.priors[f'{feature_name}_sd']).astype('float32')
                 lambda_coefs.append(model_input[:, i] * lambda_coef)
-            lambda_det = pm.Deterministic("lambda_det", pm.math.exp(lambda_intercept + sum(lambda_coefs)))
+            lambda_det = pm.Deterministic("lambda_det", pm.math.exp(lambda_intercept + sum(lambda_coefs))).astype('float32')
 
             if y is not None:
                 censor_ = pm.math.eq(censor_, 1)

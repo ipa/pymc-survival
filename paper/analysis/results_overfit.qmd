@@ -44,10 +44,10 @@ library(stringr)
 # Load data
 
 ```{r load-data, include=FALSE, message=FALSE}
-redownload <- FALSE
+redownload <- TRUE
 
 if (redownload) {
-  src_folder <- 'U:/src/pymc-survival/examples/experiments/results'
+  src_folder <- 'U:/src/pymc-survival/paper/experiments/results'
   
   data.rsf <- rbind(read.csv(paste(src_folder, 'rsf_whas/results_overfit.csv', sep = '/')),
                     read.csv(paste(src_folder, 'rsf_gbcs/results_overfit.csv', sep = '/')),
@@ -61,23 +61,23 @@ if (redownload) {
                     read.csv(paste(src_folder, 'cox_veteran/results_overfit.csv', sep = '/')),
                     read.csv(paste(src_folder, 'cox_pbc/results_overfit.csv', sep = '/'))) 
   
-  data.exp <- rbind(read.csv(paste(src_folder, 'pm_exp_whas/results_overfit.csv', sep = '/')),
-                    read.csv(paste(src_folder, 'pm_exp_gbcs/results_overfit.csv', sep = '/')),
-                    read.csv(paste(src_folder, 'pm_exp_aids/results_overfit.csv', sep = '/')),
-                    read.csv(paste(src_folder, 'pm_exp_veteran/results_overfit.csv', sep = '/')),
-                    read.csv(paste(src_folder, 'pm_exp_pbc/results_overfit.csv', sep = '/')))
-  
-  data.wb <- rbind(read.csv(paste(src_folder, 'pm_wb_gbcs/results_overfit.csv', sep = '/')), 
-                   read.csv(paste(src_folder, 'pm_wb_whas/results_overfit.csv', sep = '/')),
-                   read.csv(paste(src_folder, 'pm_wb_aids/results_overfit.csv', sep = '/')),
-                   read.csv(paste(src_folder, 'pm_wb_veteran/results_overfit.csv', sep = '/')),
-                   read.csv(paste(src_folder, 'pm_wb_pbc/results_overfit.csv', sep = '/')))
-  
-  data.nnwb <- rbind(read.csv(paste(src_folder, 'pm_nnwb_gbcs/results_overfit.csv', sep = '/')), 
-                     read.csv(paste(src_folder, 'pm_nnwb_whas/results_overfit.csv', sep = '/')),
-                    read.csv(paste(src_folder, 'pm_nnwb_aids/results_overfit.csv', sep = '/')),
-                     read.csv(paste(src_folder, 'pm_nnwb_veteran/results_overfit.csv', sep = '/')),
-                    read.csv(paste(src_folder, 'pm_nnwb_pbc/results_overfit.csv', sep = '/')))
+  data.exp <- rbind(read.csv(paste(src_folder, 'exp_whas/results_overfit.csv', sep = '/')),
+                    read.csv(paste(src_folder, 'exp_gbcs/results_overfit.csv', sep = '/')),
+                    read.csv(paste(src_folder, 'exp_aids/results_overfit.csv', sep = '/')),
+                    read.csv(paste(src_folder, 'exp_veteran/results_overfit.csv', sep = '/')),
+                    read.csv(paste(src_folder, 'exp_pbc/results_overfit.csv', sep = '/')))
+  # 
+  # data.wb <- rbind(read.csv(paste(src_folder, 'pm_wb_gbcs/results_overfit.csv', sep = '/')), 
+  #                  read.csv(paste(src_folder, 'pm_wb_whas/results_overfit.csv', sep = '/')),
+  #                  read.csv(paste(src_folder, 'pm_wb_aids/results_overfit.csv', sep = '/')),
+  #                  read.csv(paste(src_folder, 'pm_wb_veteran/results_overfit.csv', sep = '/')),
+  #                  read.csv(paste(src_folder, 'pm_wb_pbc/results_overfit.csv', sep = '/')))
+  # 
+  # data.nnwb <- rbind(read.csv(paste(src_folder, 'pm_nnwb_gbcs/results_overfit.csv', sep = '/')), 
+  #                    read.csv(paste(src_folder, 'pm_nnwb_whas/results_overfit.csv', sep = '/')),
+  #                   read.csv(paste(src_folder, 'pm_nnwb_aids/results_overfit.csv', sep = '/')),
+  #                    read.csv(paste(src_folder, 'pm_nnwb_veteran/results_overfit.csv', sep = '/')),
+  #                   read.csv(paste(src_folder, 'pm_nnwb_pbc/results_overfit.csv', sep = '/')))
   
   data.dps <- rbind(read.csv(paste(src_folder, 'deepsurv_gbcs/results_overfit.csv', sep = '/')), 
                      read.csv(paste(src_folder, 'deepsurv_whas/results_overfit.csv', sep = '/')),
@@ -85,7 +85,7 @@ if (redownload) {
                      read.csv(paste(src_folder, 'deepsurv_veteran/results_overfit.csv', sep = '/')),
                     read.csv(paste(src_folder, 'deepsurv_pbc/results_overfit.csv', sep = '/')))
   
-  data <- rbind(data.rsf, data.cox, data.exp, data.wb, data.nnwb, data.dps)
+  data <- rbind(data.rsf, data.cox, data.dps, data.exp)
   
   write.csv(data, file = 'data/results_overfitting.csv', row.names = FALSE)
 }
@@ -104,9 +104,9 @@ data <- data.raw %>%
          experiment = str_sub(experiment_name, -3, -1),
          model = str_sub(experiment_name, 0, 4),
          experiment_lbl = factor(experiment, labels = c("ACTG", "GBCS", "PBC", "Veteran", "WHAS")),
-         model_lbl = factor(model, labels = c("CoxPH", "DeepSurv", "PM Exp", "PM NN", "PM Wb", "RSF")), # 
-         run_id = rep(seq(1, 100), times = nrow(.)/100)) %>%
-  filter(run_id <= 47)
+         model_lbl = factor(model, labels = c("CoxPH", "DeepSurv", "PM Exp", "RSF"))) # 
+  #        run_id = rep(seq(1, 100), times = nrow(.)/100)) %>%
+  # filter(run_id <= 47)
 
 ```
 

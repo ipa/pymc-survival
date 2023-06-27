@@ -3,12 +3,15 @@
 module load singularity/3.7.0
 
 singularity exec \
-    --env WORKING_DIRECTORY=/home/pymc/src/examples/experiments \
+    --env WORKING_DIRECTORY=/home/pymc/src/paper/experiments \
     --env PYTHONPATH=/home/pymc/src \
-    --env AESARA_FLAGS="base_compiledir=/tmp/.aesara" \
+    --env PYCOX_DATA_DIR=/tmp/.pycox \
+    --env MPLCONFIGDIR=/tmp/.matplotlib \
+    --env PYTENSOR_FLAGS="base_compiledir=/tmp/.pytensor" \
+    --env NUMBA_CACHE_DIR=/tmp/.numba \
     --no-home \
     --bind $HOME/src/pymc-survival:/home/pymc/src \
-    modelling_pymc4-jupyter-latest.sif \
+    pymc-survival.sif \
     /bin/bash  
 
 
