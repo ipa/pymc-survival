@@ -21,11 +21,10 @@ def train_model(X_train, y_train, config, train_kwargs):
     )
 
     parameters = {
-        'model__n_hidden_layers': Integer(1, 2),
         'selector__k': Integer(1, X_train.shape[1]),
+        'model__priors_sd': Real(0.1, 0.5, prior='uniform'),
         'model__n_hidden_layers': Integer(1, 2),
-        'model__priors_sd': Real(0.1, 2, prior='log-uniform'),
-        'model__k_constant': Categorical([True, False])
+        #'model__k_constant': Categorical([True, False])
     }
 
     fit_params = {

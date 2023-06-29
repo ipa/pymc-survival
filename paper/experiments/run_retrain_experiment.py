@@ -13,7 +13,7 @@ import pmsurv_weibull
 import lifelines
 import numpy as np
 import multiprocessing
-#from pqdm.processes import pqdm
+from pqdm.processes import pqdm
 import deepsurv
 import pmsurv_common
 
@@ -78,7 +78,7 @@ def full_train(partition, model, config, kwargs):
         logger.info(f'shape {X_train.shape}, {X_test.shape}')
         if config['preprocessing']['standardize']:
             logger.info("Standardize data")
-            X_train, X_test = utils.standardize(X_train, X_test, config)
+            X_train, X_test, _ = utils.standardize(X_train, X_test, config)
             
         models_fulltrain[i] = retrain_fun[model](X_train, y_train, config, train_kwargs)
         score_ = models_fulltrain[i].score(X_test, y_test)
@@ -101,7 +101,7 @@ def re_train(partition, model, config, kwargs):
         logger.debug(f'shape {X_train.shape}, {X_test.shape}')
         if config['preprocessing']['standardize']:
             logger.info("Standardize data")
-            X_train, X_test = utils.standardize(X_train, X_test, config)
+            X_train, X_test, _ = utils.standardize(X_train, X_test, config)
         
         if i == 1:
             models[i] = retrain_fun[model](X_train, y_train, config, train_kwargs, prior_model=None)
@@ -148,12 +148,14 @@ if __name__ == '__main__':
 
     logger.info("Running {0} experiment".format(args.experiment))
 
+    start_time = time.strftime("%y%m%d%H%M", time.localtime())
+
     # Load Dataset
     logger.info("Loading datasets: " + args.dataset)
     dataset, config = utils.load_data(args.dataset)
 
     logger.info(f"Running for {args.start_run} to {args.runs} runs..")
-    pbar = tqdm(range(args.start_run, args.runs))
+    # pbar = tqdm(range(args.start_run, args.runs))
 
     experiment_dir = os.path.join(args.results_dir, args.experiment)
     os.makedirs(experiment_dir, exist_ok=True)
@@ -162,16 +164,42 @@ if __name__ == '__main__':
 
     warnings.filterwarnings(action='ignore')
     
-    proc_args = [{'model': args.model, 'dataset': dataset, 'config': config, 'train_kwargs': train_kwargs} for i in range(args.runs)]
+    run_args = []
+    for run in range(args.start_run, args.runs):
+        run_args.append({'run': run, 'model': args.model, 'dataset': dataset, 'dataset_name': args.dataset, 'config': config, 'train_kwargs': train_kwargs, 
+                         'experiment_dir': experiment_dir, 'start_time': start_time})
 
-    for run in pbar:
+
+    # proc_args = [{'model': args.model, 'dataset': dataset, 'config': config, 'train_kwargs': train_kwargs} for i in range(args.runs)]
+
+    def fun(a):
         try:
-            train_kwargs['experiment_dir'] = os.path.join(experiment_dir, str(run))
-            c_index_full, c_index_retrain = run_experiment(args.model, dataset, config, train_kwargs)
-            utils.save_results_retrain(experiment_dir, args.model, args.dataset, c_index_full, 'full')
-            utils.save_results_retrain(experiment_dir, args.model, args.dataset, c_index_retrain, 'retrain')
+            np.random.seed(int(a['run']))
+            a['train_kwargs']['experiment_dir'] = os.path.join(a['experiment_dir'], str(a['run']))
+            c_index_full, c_index_retrain = run_experiment(a['model'], a['dataset'], a['config'], a['train_kwargs'])
+            utils.save_results_retrain(a['experiment_dir'], a['model'], a['dataset_name'], c_index_full, 'full')
+            utils.save_results_retrain(a['experiment_dir'], a['model'], a['dataset_name'], c_index_retrain, 'retrain')
+            return [c_index_full[i] - c_index_retrain[i] for i in range(len(c_index_full))]
         except:
-            logger.warn('one iteration failed')
+            logger.error("Something failed")
+            print('Unexpected error: ', sys.exc_info())
             raise
+            utils.save_results(a['experiment_dir'], f"{a['model']}_failed", a['dataset_name'], -1, None, a['start_time'], a['run'])
+            return None
+
+    result = pqdm(run_args, fun, n_jobs=args.jobs) #, exception_behaviour='immediate'
+    print(result)
+    print(f'Results: {result}')
+    # print(f'Mean C-Index {np.mean(result)}')
+
+    # for run in pbar:
+    #     try:
+    #         train_kwargs['experiment_dir'] = os.path.join(experiment_dir, str(run))
+    #         c_index_full, c_index_retrain = run_experiment(args.model, dataset, config, train_kwargs)
+    #         utils.save_results_retrain(experiment_dir, args.model, args.dataset, c_index_full, 'full')
+    #         utils.save_results_retrain(experiment_dir, args.model, args.dataset, c_index_retrain, 'retrain')
+    #     except:
+    #         logger.warn('one iteration failed')
+    #         raise
     logger.info("Finished")
 

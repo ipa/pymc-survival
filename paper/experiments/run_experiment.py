@@ -7,8 +7,10 @@ import contextlib
 import os
 import joblib
 from tqdm import tqdm
+from pqdm.processes import pqdm
 from sklearn.model_selection import train_test_split
 from skopt import BayesSearchCV
+from skopt.callbacks import DeltaYStopper
 import utils
 import pmsurv_exponential
 import pmsurv_weibull
@@ -18,6 +20,7 @@ import pmsurv_common
 import rsf
 import coxph
 import deepsurv
+import numpy as np
 
 class DummyFile(object):
     def write(self, x): pass
@@ -74,6 +77,8 @@ def parse_args():
     parser.add_argument('--n-iter', type=int, default=25, help='number of iterations in search')
     return parser.parse_args()
 
+def cb_log(res):
+    logger.info(f'C-Index: {-res.fun}')
 
 def run_experiment(model, dataset, config, train_kwargs):
     dataset = dataset.dropna(subset=config['features'])
@@ -89,15 +94,16 @@ def run_experiment(model, dataset, config, train_kwargs):
 
     pipeline, parameters, fit_params = train_fun[model](X_train, y_train, config, train_kwargs)
     n_cv = 5
-    n_points = int(train_kwargs['jobs'] / n_cv)
+    n_points = 1 #int(train_kwargs['jobs'] / n_cv)
     opt = BayesSearchCV(pipeline, parameters,
                         fit_params=fit_params,
-                        n_jobs=train_kwargs['jobs'],
+                        n_jobs=1,#train_kwargs['jobs'],
                         n_points=n_points if n_points > 1 else 1,
                         n_iter=train_kwargs['n_iter'],
                         cv=n_cv,
                         error_score='raise')
-    opt.fit(X_train, y_train)
+    stopper = DeltaYStopper(0.02, n_best=6)
+    opt.fit(X_train, y_train, callback=[stopper, cb_log])
     metrics = opt.best_estimator_.score(X_test, y_test)
     logger.info("Test metrics: " + str(metrics))
 
@@ -109,7 +115,8 @@ if __name__ == '__main__':
     os.chdir(working)
 
     logger = logging.getLogger(__name__)
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s',
+                        level=logging.INFO)
     logger_pymc = logging.getLogger("pymc")
     logger_pymc.setLevel(logging.ERROR)
     logger_pymc.propagate = False
@@ -135,17 +142,45 @@ if __name__ == '__main__':
     c_indexes = utils.RollingMean()
     warnings.filterwarnings(action='ignore')
 
-    for run in pbar:
-        try:
-            #with nostdout():
-            c_index, model, params, data = run_experiment(args.model, dataset, config, train_kwargs)
-            c_indexes.add(c_index)
-            utils.save_results(experiment_dir, args.model, args.dataset, c_index, params, start_time, run)
-            pbar.set_description(f"C-Index {str(c_indexes)}")
+    run_args = []
+    for run in range(args.runs):
+        run_args.append({'run': run, 'model': args.model, 'dataset': dataset, 'dataset_name': args.dataset, 'config': config, 'train_kwargs': train_kwargs, 
+                         'experiment_dir': experiment_dir, 'start_time': start_time})
 
-            save_fun[args.model](os.path.join(experiment_dir, str(start_time), str(run)), model, c_index, params, data)
+    def fun(a):
+        try:
+            np.random.seed(100+int(a['run']))
+            c_index, model, params, data = run_experiment(a['model'], a['dataset'], a['config'], a['train_kwargs'])
+            utils.save_results(a['experiment_dir'], a['model'], a['dataset_name'], c_index, params, a['start_time'], a['run'])
+            save_fun[a['model']](os.path.join(a['experiment_dir'], str(a['start_time']), str(a['run'])), model, c_index, params, data)
+            return c_index
         except:
             logger.error("Something failed")
-            raise
+            print('Unexpected error: ', sys.exc_info()[0])
+            utils.save_results(a['experiment_dir'], f"{a['model']}_failed", a['dataset_name'], -1, None, a['start_time'], a['run'])
+            return None
     
-    logger.info("Finished") 
+    # result = []
+    # for ra in run_args:
+    #     r = fun(ra)
+    #     result.append(r)
+    result = pqdm(run_args, fun, n_jobs=args.jobs) #, exception_behaviour='immediate'
+    print(result)
+    print(f'Results: {result}')
+    print(f'Mean C-Index {np.mean(result)}')
+
+    #for run in pbar:
+    #    try:
+    #        #with nostdout():
+    #        c_index, model, params, data = run_experiment(args.model, dataset, config, train_kwargs)
+    #        c_indexes.add(c_index)
+    #        utils.save_results(experiment_dir, args.model, args.dataset, c_index, params, start_time, run)
+    #        pbar.set_description(f"C-Index {str(c_indexes)}")
+    #
+    #        save_fun[args.model](os.path.join(experiment_dir, str(start_time), str(run)), model, c_index, params, data)
+    #    except:
+    #        raise
+    #        logger.error("Something failed")
+    #        failed_experiments.append(run)
+    
+    #logger.info(f"Finished with {len(failed_experiments)} failed") 
