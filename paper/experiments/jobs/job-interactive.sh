@@ -9,6 +9,7 @@ singularity exec \
     --env MPLCONFIGDIR=/tmp/.matplotlib \
     --env PYTENSOR_FLAGS="base_compiledir=/tmp/.pytensor" \
     --env NUMBA_CACHE_DIR=/tmp/.numba \
+    --env PMSURV_SAMPLER=pymc \
     --no-home \
     --bind $HOME/src/pymc-survival:/home/pymc/src \
     pymc-survival.sif \

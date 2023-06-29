@@ -1,0 +1,28 @@
+#BSUB -W [walltime]:00
+#BSUB -o /rsrch3/scratch/int_rad_rsch/[user]/logs/pymc-survival
+#BSUB -e /rsrch3/scratch/int_rad_rsch/[user]/logs/pymc-survival
+#BSUB -cwd /rsrch3/home/int_rad_rsch/[user]/src/pymc-survival/paper/jobs
+#BSUB -q medium
+#BSUB -n [nodes]
+#BSUB -M 16
+#BSUB -R rusage[mem=16]
+#BSUB -u [email]
+#BSUB -J [model_short]_[dataset]
+
+module load singularity/3.7.0
+
+singularity exec \
+    --env WORKING_DIRECTORY=/home/pymc/src/paper/experiments \
+    --env PYTHONPATH=/home/pymc/src \
+    --env PYCOX_DATA_DIR=/tmp/.pycox \
+    --env NUMBA_CACHE_DIR=/tmp/.numba \
+    --env MPLCONFIGDIR=/tmp/.matplotlib \
+    --no-home \
+    --bind $HOME/src/pymc-survival:/home/pymc/src \
+    [container] \
+    /bin/bash -c " \
+        export PYTENSOR_FLAGS="base_compiledir=/tmp/.pytensor"
+        python /home/pymc/src/paper/experiments/run_experiment.py [model] [model_short]_[dataset] data/[dataset] --runs 100 --jobs 15 --n-iter 25 \
+    "
+
+

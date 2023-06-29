@@ -1,0 +1,38 @@
+template: 'job-template-comparision.lsf'
+models: 
+  cox: 
+    name: 'cox'
+    nodes: 10
+    short_name: 'cox'
+    walltime: 6
+  deepsurv: 
+    name: 'deepsurv'
+    nodes: 10
+    short_name: 'deepsurv'
+    walltime: 24
+  pmsurv_exponential:
+    name: 'pmsurv_exponential' 
+    nodes: 10
+    short_name: 'exp'
+    walltime: 24
+  pmsurv_weibull_linear: 
+    name: 'pmsurv_weibull_linear' 
+    nodes: 10
+    short_name: 'wb'
+    walltime: 24
+  pmsurv_weibull_nn: 
+    name: 'pmsurv_weibull_nn' 
+    nodes: 10
+    short_name: 'nnwb'
+    walltime: 24
+  rsf: 
+    name: 'rsf' 
+    nodes: 10
+    short_name: 'rsf'
+    walltime: 12
+datasets:
+  - aids
+  - gbcs
+  - pbc
+  - veteran
+  - whas
