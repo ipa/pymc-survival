@@ -2,4 +2,7 @@ results/
 results_old/
 results_retrain/
 results_retrain_original/
+*.sif
+*.bak/
+*.tmp/
 

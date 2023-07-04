@@ -80,12 +80,15 @@ def bootstrap_metric(metric_fxn, dataset, N=100):
     }
 
 
-def save_results(results_dir, model, experiment, cindex, params, start_time, run):
+def save_results(results_dir, model, experiment, cindex, cindex_train, cindex_test, params, start_time, run):
     os.makedirs(results_dir, exist_ok=True)
     df_results = pd.DataFrame({
         'experiment': [experiment],
         'model': [model],
         'cindex': [cindex],
+        'cindex_train': [cindex_train],
+        'cindex_test': [cindex_test],
+        'cindex_diff': [cindex_train - cindex_test],
         'starttime': [start_time],
         'run': [run],
         'hyperparams': [params]

@@ -1,13 +1,13 @@
 #BSUB -W [walltime]:00
 #BSUB -o /rsrch3/scratch/int_rad_rsch/[user]/logs/pymc-survival
 #BSUB -e /rsrch3/scratch/int_rad_rsch/[user]/logs/pymc-survival
-#BSUB -cwd /rsrch3/home/int_rad_rsch/[user]/src/pymc-survival/paper/jobs
-#BSUB -q medium
+#BSUB -cwd /rsrch3/home/int_rad_rsch/ipaolucci/src/pymc-survival/paper/experiments
+#BSUB -q [queue]
 #BSUB -n [nodes]
-#BSUB -M 16
-#BSUB -R rusage[mem=16]
+#BSUB -M [memory] 
+#BSUB -R rusage[mem=[memory]]
 #BSUB -u [email]
-#BSUB -J [model_short]_[dataset]
+#BSUB -J [model_short]_[dataset]_u
 
 module load singularity/3.7.0
 
@@ -17,12 +17,13 @@ singularity exec \
     --env PYCOX_DATA_DIR=/tmp/.pycox \
     --env NUMBA_CACHE_DIR=/tmp/.numba \
     --env MPLCONFIGDIR=/tmp/.matplotlib \
+    --env PMSURV_SAMPLER=pymc \
     --no-home \
     --bind $HOME/src/pymc-survival:/home/pymc/src \
     [container] \
     /bin/bash -c " \
         export PYTENSOR_FLAGS="base_compiledir=/tmp/.pytensor"
-        python /home/pymc/src/paper/experiments/run_experiment.py [model] [model_short]_[dataset] data/[dataset] --runs 100 --jobs 15 --n-iter 25 \
+        python3 /home/pymc/src/paper/experiments/run_retrain_experiment.py [model] [model_short]_[dataset] data/[dataset] --jobs [n_jobs] --runs 75 --start-run 0 --n-partitions [n_partitions] \
     "
 
 

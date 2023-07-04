@@ -27,7 +27,7 @@ def train_model(X_train, y_train, config, train_kwargs):
 
     parameters = {
         'selector__k': Integer(1, X_train.shape[1]),
-        'model__priors_sd': Real(0.1, 2, prior='log-uniform')
+        'model__priors_sd': Real(0.1, 2, prior='uniform')
     }
 
     fit_params = {
@@ -44,7 +44,7 @@ def train_model(X_train, y_train, config, train_kwargs):
 
 
 def get_priors(summary, config):
-    new_priors = ExponentialModel._get_default_priors()
+    new_priors = ExponentialModel()._get_priors()
     for feature in config['features']:
         new_priors[f'lambda_{feature}_mu'] = summary['mean'][f'lambda_{feature}']
         new_priors[f'lambda_{feature}_sd'] = summary['sd'][f'lambda_{feature}']
@@ -56,13 +56,11 @@ def get_priors(summary, config):
 
 def retrain_model(X_train, y_train, config, train_kwargs, prior_model=None):
     model = ExponentialModel()
-    #inference_args = BayesianModel._get_default_inference_args()
-    #inference_args['chain_method'] = 'parallel'
     if prior_model is None:
-        model.fit(X_train, y_train)#, inference_args=inference_args)
+        model.fit(X_train, y_train)
     else:
         new_priors = get_priors(az.summary(prior_model.trace), config)
-        model.fit(X_train, y_train, priors=new_priors)#, inference_args=inference_args)
+        model.fit(X_train, y_train, priors=new_priors)
     
     return model
 

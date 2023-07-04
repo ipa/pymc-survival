@@ -2,3 +2,6 @@ _old/
 *.sif
 logs/
 comparison/
+updating/
+*.bak/
+misc/
