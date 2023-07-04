@@ -37,10 +37,10 @@ def main():
             selector = joblib.load(os.path.join(run_path, 'selector.pkl'))
             if 'exp_' in experiment_name:
                 model = ExponentialModel()
-            elif 'wb_' in experiment_name:
-                model = WeibullModelLinear()
             elif 'nnwb_' in experiment_name:
-                model = WeibullModelNN()
+                model = WeibullModelNN(k_constant=True)
+            elif 'wb_' in experiment_name:
+                model = WeibullModelLinear(k_constant=True)
         
             model.load(os.path.join(run_path, 'model.yaml'))
         

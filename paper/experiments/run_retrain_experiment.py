@@ -5,17 +5,14 @@ import warnings
 import sys
 import contextlib
 import os
-import joblib
-from tqdm import tqdm
 import utils
+import numpy as np
+from pqdm.processes import pqdm
 import pmsurv_exponential
 import pmsurv_weibull
-import lifelines
-import numpy as np
-import multiprocessing
-from pqdm.processes import pqdm
 import deepsurv
 import pmsurv_common
+
 
 #TODO: https://docs.pymc.io/en/v3/pymc-examples/examples/pymc3_howto/updating_priors.html
 
@@ -73,11 +70,12 @@ def full_train(partition, model, config, kwargs):
     score_fulltrain = []
     n_partitions = kwargs['n_partitions']
     for i in range(1, n_partitions):
+        logger.info(f'partition {i}')
         X_train, y_train = preprocess_data_fun[model](partition[100+i], config)
         X_test, y_test = preprocess_data_fun[model](partition[i+1], config)
         logger.info(f'shape {X_train.shape}, {X_test.shape}')
         if config['preprocessing']['standardize']:
-            logger.info("Standardize data")
+            logger.debug("Standardize data")
             X_train, X_test, _ = utils.standardize(X_train, X_test, config)
             
         models_fulltrain[i] = retrain_fun[model](X_train, y_train, config, train_kwargs)
@@ -96,11 +94,12 @@ def re_train(partition, model, config, kwargs):
     score_retrain = []
     n_partitions = kwargs['n_partitions']
     for i in range(1, n_partitions):
+        logger.info(f'partition {i}')
         X_train, y_train = preprocess_data_fun[model](partition[i], config)
         X_test, y_test = preprocess_data_fun[model](partition[i+1], config)
         logger.debug(f'shape {X_train.shape}, {X_test.shape}')
         if config['preprocessing']['standardize']:
-            logger.info("Standardize data")
+            logger.debug("Standardize data")
             X_train, X_test, _ = utils.standardize(X_train, X_test, config)
         
         if i == 1:
@@ -130,8 +129,8 @@ def run_experiment(model, dataset, config, train_kwargs):
         partition[i] = dataset.iloc[partition_idx==i, :]
         partition[100+i] = dataset.iloc[partition_idx<=i, :]
 
-    score_retrain = re_train(partition, model, config, train_kwargs)
     score_fulltrain = full_train(partition, model, config, train_kwargs)
+    score_retrain = re_train(partition, model, config, train_kwargs)
     return score_fulltrain, score_retrain
 
 
@@ -141,7 +140,7 @@ if __name__ == '__main__':
 
     logging.basicConfig(level=logging.WARNING)
     logger_pymc = logging.getLogger("pymc")
-    logger_pymc.setLevel(logging.ERROR)
+    logger_pymc.setLevel(logging.INFO)
     logger_pymc.propagate = False
 
     args = parse_args()
@@ -155,7 +154,6 @@ if __name__ == '__main__':
     dataset, config = utils.load_data(args.dataset)
 
     logger.info(f"Running for {args.start_run} to {args.runs} runs..")
-    # pbar = tqdm(range(args.start_run, args.runs))
 
     experiment_dir = os.path.join(args.results_dir, args.experiment)
     os.makedirs(experiment_dir, exist_ok=True)
@@ -166,40 +164,28 @@ if __name__ == '__main__':
     
     run_args = []
     for run in range(args.start_run, args.runs):
-        run_args.append({'run': run, 'model': args.model, 'dataset': dataset, 'dataset_name': args.dataset, 'config': config, 'train_kwargs': train_kwargs, 
+        run_args.append({'run': run, 'model': args.model, 'dataset': dataset, 
+                         'dataset_name': args.dataset, 'config': config, 'train_kwargs': train_kwargs, 
                          'experiment_dir': experiment_dir, 'start_time': start_time})
 
-
-    # proc_args = [{'model': args.model, 'dataset': dataset, 'config': config, 'train_kwargs': train_kwargs} for i in range(args.runs)]
-
     def fun(a):
+        np.random.seed(100+int(a['run']))
         try:
-            np.random.seed(int(a['run']))
             a['train_kwargs']['experiment_dir'] = os.path.join(a['experiment_dir'], str(a['run']))
             c_index_full, c_index_retrain = run_experiment(a['model'], a['dataset'], a['config'], a['train_kwargs'])
             utils.save_results_retrain(a['experiment_dir'], a['model'], a['dataset_name'], c_index_full, 'full')
             utils.save_results_retrain(a['experiment_dir'], a['model'], a['dataset_name'], c_index_retrain, 'retrain')
-            return [c_index_full[i] - c_index_retrain[i] for i in range(len(c_index_full))]
+            utils.save_results_retrain(a['train_kwargs']['experiment_dir'], a['model'], a['dataset_name'], c_index_full, 'full')
+            utils.save_results_retrain(a['train_kwargs']['experiment_dir'], a['model'], a['dataset_name'], c_index_retrain, 'retrain')
+            return True #[c_index_full[i] - c_index_retrain[i] for i in range(len(c_index_full))]
         except:
             logger.error("Something failed")
-            print('Unexpected error: ', sys.exc_info())
-            raise
-            utils.save_results(a['experiment_dir'], f"{a['model']}_failed", a['dataset_name'], -1, None, a['start_time'], a['run'])
-            return None
-
+            logger.error('Unexpected error: ', sys.exc_info())
+            return False
+            
+    
     result = pqdm(run_args, fun, n_jobs=args.jobs) #, exception_behaviour='immediate'
-    print(result)
-    print(f'Results: {result}')
-    # print(f'Mean C-Index {np.mean(result)}')
+    logger.info(f'{np.sum(result)} / {len(result)} succeeded')
 
-    # for run in pbar:
-    #     try:
-    #         train_kwargs['experiment_dir'] = os.path.join(experiment_dir, str(run))
-    #         c_index_full, c_index_retrain = run_experiment(args.model, dataset, config, train_kwargs)
-    #         utils.save_results_retrain(experiment_dir, args.model, args.dataset, c_index_full, 'full')
-    #         utils.save_results_retrain(experiment_dir, args.model, args.dataset, c_index_retrain, 'retrain')
-    #     except:
-    #         logger.warn('one iteration failed')
-    #         raise
     logger.info("Finished")
 

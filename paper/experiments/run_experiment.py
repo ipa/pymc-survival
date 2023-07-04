@@ -21,6 +21,7 @@ import rsf
 import coxph
 import deepsurv
 import numpy as np
+import pandas as pd
 
 class DummyFile(object):
     def write(self, x): pass
@@ -94,10 +95,10 @@ def run_experiment(model, dataset, config, train_kwargs):
 
     pipeline, parameters, fit_params = train_fun[model](X_train, y_train, config, train_kwargs)
     n_cv = 5
-    n_points = 1 #int(train_kwargs['jobs'] / n_cv)
+    n_points = 1 
     opt = BayesSearchCV(pipeline, parameters,
                         fit_params=fit_params,
-                        n_jobs=1,#train_kwargs['jobs'],
+                        n_jobs=1,
                         n_points=n_points if n_points > 1 else 1,
                         n_iter=train_kwargs['n_iter'],
                         cv=n_cv,
@@ -144,43 +145,28 @@ if __name__ == '__main__':
 
     run_args = []
     for run in range(args.runs):
-        run_args.append({'run': run, 'model': args.model, 'dataset': dataset, 'dataset_name': args.dataset, 'config': config, 'train_kwargs': train_kwargs, 
+        run_args.append({'run': run, 'model': args.model, 'dataset': dataset, 'dataset_name': args.dataset, 
+                         'config': config, 'train_kwargs': train_kwargs, 'experiment_name': args.experiment,
                          'experiment_dir': experiment_dir, 'start_time': start_time})
 
     def fun(a):
         try:
-            np.random.seed(100+int(a['run']))
+            np.random.seed(int(a['run']))
             c_index, model, params, data = run_experiment(a['model'], a['dataset'], a['config'], a['train_kwargs'])
-            utils.save_results(a['experiment_dir'], a['model'], a['dataset_name'], c_index, params, a['start_time'], a['run'])
-            save_fun[a['model']](os.path.join(a['experiment_dir'], str(a['start_time']), str(a['run'])), model, c_index, params, data)
-            return c_index
-        except:
-            logger.error("Something failed")
-            print('Unexpected error: ', sys.exc_info()[0])
-            utils.save_results(a['experiment_dir'], f"{a['model']}_failed", a['dataset_name'], -1, None, a['start_time'], a['run'])
-            return None
-    
-    # result = []
-    # for ra in run_args:
-    #     r = fun(ra)
-    #     result.append(r)
-    result = pqdm(run_args, fun, n_jobs=args.jobs) #, exception_behaviour='immediate'
-    print(result)
-    print(f'Results: {result}')
-    print(f'Mean C-Index {np.mean(result)}')
+            
+            X_train, X_test, y_train, y_test = data
+            cindex_train = model.score(X_train, y_train)
+            cindex_test = model.score(X_test, y_test)
 
-    #for run in pbar:
-    #    try:
-    #        #with nostdout():
-    #        c_index, model, params, data = run_experiment(args.model, dataset, config, train_kwargs)
-    #        c_indexes.add(c_index)
-    #        utils.save_results(experiment_dir, args.model, args.dataset, c_index, params, start_time, run)
-    #        pbar.set_description(f"C-Index {str(c_indexes)}")
-    #
-    #        save_fun[args.model](os.path.join(experiment_dir, str(start_time), str(run)), model, c_index, params, data)
-    #    except:
-    #        raise
-    #        logger.error("Something failed")
-    #        failed_experiments.append(run)
+            utils.save_results(a['experiment_dir'], a['model'], a['dataset_name'], c_index, cindex_train, cindex_test, params, a['start_time'], a['run'])
+            save_fun[a['model']](os.path.join(a['experiment_dir'], str(a['start_time']), str(a['run'])), model, c_index, params, data)
+
+            return True
+        except:
+            logger.error('Unexpected error: ', sys.exc_info()[0])
+            return False
     
-    #logger.info(f"Finished with {len(failed_experiments)} failed") 
+    result = pqdm(run_args, fun, n_jobs=args.jobs) 
+
+    logger.info(f'{np.sum(result)} / {len(result)} succeeded')
+    logger.info("Finished")
