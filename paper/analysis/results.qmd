@@ -1,7 +1,7 @@
 ---
 title: "Bayesian parametric models for survival prediction in medical applications"
 subtitle: "Comparison of algorithms"
-date: "12-02-2022"
+date: "07-04-2023"
 author:
   - name: Iwan Paolucci, PhD
     affiliation: "MD Anderson Cancer Center, Department of Interventional Radiology, Houston, TX, USA"
@@ -61,13 +61,15 @@ if (redownload) {
                    read.csv(paste(src_folder, 'wb_whas/results.csv', sep = '/')),
                    read.csv(paste(src_folder, 'wb_aids/results.csv', sep = '/')),
                    read.csv(paste(src_folder, 'wb_veteran/results.csv', sep = '/')),
-                   read.csv(paste(src_folder, 'wb_pbc/results.csv', sep = '/')))
-  # 
-  # data.nnwb <- rbind(read.csv(paste(src_folder, 'nnwb_gbcs/results.csv', sep = '/')), 
-  #                    read.csv(paste(src_folder, 'nnwb_whas/results.csv', sep = '/')),
-  #                   read.csv(paste(src_folder, 'nnwb_aids/results.csv', sep = '/')),
-  #                    read.csv(paste(src_folder, 'nnwb_veteran/results.csv', sep = '/')),
-  #                   read.csv(paste(src_folder, 'nnwb_pbc/results.csv', sep = '/')))
+                   read.csv(paste(src_folder, 'wb_pbc/results.csv', sep = '/')))%>%
+    select(X, experiment, model, cindex, starttime, run, hyperparams)
+
+  data.nnwb <- rbind(read.csv(paste(src_folder, 'nnwb_gbcs/results.csv', sep = '/')),
+                     read.csv(paste(src_folder, 'nnwb_whas/results.csv', sep = '/')),
+                    read.csv(paste(src_folder, 'nnwb_aids/results.csv', sep = '/')),
+                     read.csv(paste(src_folder, 'nnwb_veteran/results.csv', sep = '/')),
+                    read.csv(paste(src_folder, 'nnwb_pbc/results.csv', sep = '/'))) %>%
+    select(X, experiment, model, cindex, starttime, run, hyperparams)
 
   data.dps <- rbind(read.csv(paste(src_folder, 'deepsurv_gbcs/results.csv', sep = '/')),
                      read.csv(paste(src_folder, 'deepsurv_whas/results.csv', sep = '/')),
@@ -75,7 +77,7 @@ if (redownload) {
                      read.csv(paste(src_folder, 'deepsurv_veteran/results.csv', sep = '/')),
                     read.csv(paste(src_folder, 'deepsurv_pbc/results.csv', sep = '/')))
   
-  data <- rbind(data.rsf, data.cox, data.dps, data.exp, data.wb)
+  data <- rbind(data.rsf, data.cox, data.dps, data.exp, data.wb, data.nnwb)
   
   write.csv(data, file = 'data/results_comparison.csv', row.names = FALSE)
 }
@@ -90,12 +92,12 @@ data.raw <- read.csv('data/results_comparison.csv')
 ```{r}
 
 data <- data.raw %>%
-  # filter(model != 'pmsurv_gp') %>%
+  filter(model != 'pmsurv_weibull_linear_failed') %>%
   mutate(experiment = ifelse(experiment == 'data/aids/', 'data/aids', experiment),
          experiment_lbl = factor(experiment, labels = c("ACTG", "GBCS", "PBC", "Veteran", "WHAS")),
          model_lbl = factor(model, 
-                            levels = c('cox', 'deepsurv', 'pmsurv_exponential', 'pmsurv_weibull_linear', 'rsf'),
-                            labels = c("CoxPH", "DeepSurv", "PM Exp", "PM Wb", "RSF")))
+                            levels = c('cox', 'deepsurv', 'pmsurv_exponential', 'pmsurv_weibull_linear', 'pmsurv_weibull_nn', 'rsf'),
+                            labels = c("CoxPH", "DeepSurv", "BPS Exp", "BPS Wb", "BPS WbNN", "RSF"))) 
          # run_id = rep(seq(1, 100), times = nrow(.)/100)) %>%
   # filter(run_id <= 47)
 

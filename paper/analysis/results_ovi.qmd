@@ -1,7 +1,7 @@
 ---
 title: "Bayesian parametric models for survival prediction in medical applications"
 subtitle: "Overlap of posterior distributions"
-date: "03-29-2023"
+date: "07-03-2023"
 author:
   - name: Iwan Paolucci, PhD
     affiliation: "MD Anderson Cancer Center, Department of Interventional Radiology, Houston, TX, USA"
@@ -33,25 +33,25 @@ knitr::opts_chunk$set(dev.args = list(png = list(type = "cairo")),
 # Load data
 
 ```{r, include=FALSE}
-redownload <- FALSE
+redownload <- TRUE
 
 if (redownload){
-  src_folder <- 'U:/src/pymc-survival/examples/experiments/results_retrain'
+  src_folder <- 'U:/src/pymc-survival/paper/experiments/results_retrain'
   
   
   data.exp <- rbind(
-    read.csv(paste(src_folder, 'pm_exp_gbcs/ovi.csv', sep = '/')) %>% mutate(experiment = 'gbcs'),
-    read.csv(paste(src_folder, 'pm_exp_whas/ovi.csv', sep = '/')) %>% mutate(experiment = 'whas'),
-    read.csv(paste(src_folder, 'pm_exp_pbc/ovi.csv', sep = '/')) %>% mutate(experiment = 'pbc'),
-    read.csv(paste(src_folder, 'pm_exp_aids/ovi.csv', sep = '/')) %>% mutate(experiment = 'actg')
+    read.csv(paste(src_folder, 'exp_gbcs/ovi.csv', sep = '/')) %>% mutate(experiment = 'gbcs'),
+    read.csv(paste(src_folder, 'exp_whas/ovi.csv', sep = '/')) %>% mutate(experiment = 'whas'),
+    read.csv(paste(src_folder, 'exp_pbc/ovi.csv', sep = '/')) %>% mutate(experiment = 'pbc'),
+    read.csv(paste(src_folder, 'exp_aids/ovi.csv', sep = '/')) %>% mutate(experiment = 'actg')
   )
   
   
   data.wb <- rbind(
-    read.csv(paste(src_folder, 'pm_wb_gbcs/ovi.csv', sep = '/')) %>% mutate(experiment = 'gbcs', model = 'pm_wb'),
-    read.csv(paste(src_folder, 'pm_wb_whas/ovi.csv', sep = '/')) %>% mutate(experiment = 'whas', model = 'pm_wb'),
-    read.csv(paste(src_folder, 'pm_wb_pbc/ovi.csv', sep = '/')) %>% mutate(experiment = 'pbc', model = 'pm_wb'),
-    read.csv(paste(src_folder, 'pm_wb_aids/ovi.csv', sep = '/')) %>% mutate(experiment = 'actg', model = 'pm_wb')
+    read.csv(paste(src_folder, 'wb_gbcs/ovi.csv', sep = '/')) %>% mutate(experiment = 'gbcs', model = 'pm_wb'),
+    read.csv(paste(src_folder, 'wb_whas/ovi.csv', sep = '/')) %>% mutate(experiment = 'whas', model = 'pm_wb'),
+    read.csv(paste(src_folder, 'wb_pbc/ovi.csv', sep = '/')) %>% mutate(experiment = 'pbc', model = 'pm_wb'),
+    read.csv(paste(src_folder, 'wb_aids/ovi.csv', sep = '/')) %>% mutate(experiment = 'actg', model = 'pm_wb')
   )
   
   data <- rbind(data.exp, data.wb)
@@ -73,7 +73,7 @@ load(file = 'data/ovi.rds')
 ```{r}
 data$experiment_lbl <- toupper(data$experiment_lbl)
 
-data$model_lbl <- factor(data$model_lbl, labels = c('PM Exponential', 'PM Weibull'))
+data$model_lbl <- factor(data$model_lbl, labels = c('BPS Exponential', 'BPS Weibull'))
 
 ```
 
@@ -124,7 +124,7 @@ data.whas <- data %>%
 ```
 
 
-```{r plt-ovi-whas, fig.width=7, fig.asp=0.6}
+```{r plt-ovi-whas, warning=FALSE, fig.width=7, fig.asp=0.6}
 
 plot_ovi(data.whas, 'whas', 'pm_exp')
 
