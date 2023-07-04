@@ -11,7 +11,7 @@ from pmsurv.models.weibull_base import WeibullModelBase
 
 
 class WeibullModelNN(WeibullModelBase):
-    def __init__(self, k_constant=False, n_hidden_layers=1, priors_sd=0.25):
+    def __init__(self, k_constant=True, n_hidden_layers=1, priors_sd=0.25):
         super(WeibullModelNN, self).__init__()
         self.column_names = None
         self.max_time = None
@@ -56,7 +56,8 @@ class WeibullModelNN(WeibullModelBase):
         print(self.priors['n_hidden_layers'])
         n_hidden_layers = copy.deepcopy(self.priors['n_hidden_layers'])
         n_hidden_layers.insert(0, self.num_pred)
-        n_hidden_layers.append(2)
+        output_dims = 1 if self.priors['k_constant'] else 2
+        n_hidden_layers.append(output_dims)
         print(n_hidden_layers)
 
         model = pm.Model()
@@ -104,8 +105,8 @@ class WeibullModelNN(WeibullModelBase):
 
                 print('Keep k constant = %s' % self.priors['k_constant'])
                 if self.priors['k_constant']:
-                    k_constant = 0.0
-                    k_ = pm.Deterministic("k_det", pm.math.exp(k_intercept + (x_hidden[:, 1] * k_constant)))
+                    # k_constant = 0.0
+                    k_ = pm.Deterministic("k_det", pm.math.exp(k_intercept)) # + (x_hidden[:, 1] * k_constant)
                 else:
                     k_ = pm.Deterministic("k_det", pm.math.exp(k_intercept + x_hidden[:, 1]))
 

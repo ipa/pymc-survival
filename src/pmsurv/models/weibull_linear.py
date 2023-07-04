@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 class WeibullModelLinear(WeibullModelBase):
-    def __init__(self, k_constant=False, priors_sd=1):
+    def __init__(self, k_constant=True, priors_sd=1):
         super(WeibullModelLinear, self).__init__()
         self.column_names = None
         self.max_time = None
