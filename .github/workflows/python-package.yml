@@ -18,7 +18,7 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-    container: ${{ env.REGISTRY }}/${{CONTAINER_IMAGE_NAME}}:${GITHUB_REF##*/}
+    container: ${{ env.REGISTRY }}/${{env.CONTAINER_IMAGE_NAME}}:${GITHUB_REF##*/}
     strategy:
       fail-fast: false
       matrix:
