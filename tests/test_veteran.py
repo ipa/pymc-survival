@@ -3,7 +3,6 @@ import pandas as pd
 from pmsurv.models.weibull_linear import WeibullModelLinear
 from pmsurv.models.exponential_model import ExponentialModel
 import arviz as az
-from sklearn.preprocessing import OneHotEncoder
 
 
 class MyTestCase(unittest.TestCase):

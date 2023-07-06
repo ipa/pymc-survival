@@ -1,19 +1,14 @@
 import warnings
-import os
-import tempfile
 import unittest
-import arviz as az
-import matplotlib.pyplot as plt
-import pandas as pd
-from pathlib import Path
 
 from pmsurv.models.exponential_model import ExponentialModel
 import tests.syntheticdata
 
 warnings.simplefilter("ignore")
+
+
 class TestSamplers(unittest.TestCase):
     def get_data():
-        included_features = ['a']
         lam_ctrl = 1
         lam_trt = 2.5
         k = 1

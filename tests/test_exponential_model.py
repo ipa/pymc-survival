@@ -12,21 +12,13 @@ import tests.syntheticdata
 
 warnings.simplefilter("ignore")
 
+
 class TestExponentialModel(unittest.TestCase):
 
     def test_setup(self):
         print("test_setup")
-        priors = {
-            'lambda_mu': 0,
-            'lambda_sd': 5,
-            'k_mu': 0,
-            'k_sd': 5,
-            'coefs_mu': 0,
-            'coefs_sd': 0.5
-        }
-        included_features = ['a', 'b']
-        wb_model = ExponentialModel()
-        self.assertIsNotNone(wb_model)
+        model = ExponentialModel()
+        self.assertIsNotNone(model)
 
     def test_create_model(self):
         print("test_create_model")
@@ -48,7 +40,6 @@ class TestExponentialModel(unittest.TestCase):
 
     def test_fit(self):
         print("test_fit")
-        included_features = ['a']
         lam_ctrl = 1
         lam_trt = 2.5
         k = 1
@@ -109,12 +100,10 @@ class TestExponentialModel(unittest.TestCase):
 
     def test_score(self):
         print("test_fit_1")
-        included_features = ['a']
         X, y = tests.syntheticdata.synthetic_data_weibull(lam_ctrl=1, lam_trt=2.5, k=1)
         y[:, 1] = 1 - y[:, 1]  # inverse
         print(X.shape, y.shape)
-        fit_args = {'draws': 1000, 'tune': 1000, 'chains': 2, 'cores': 1, 'return_inferencedata': True,
-                    'progressbar': True}
+        fit_args = {'draws': 1000, 'tune': 1000, 'chains': 2, 'cores': 1, 'return_inferencedata': True}
         wb_model = ExponentialModel()
         wb_model.fit(X, y, inference_args=fit_args)
 

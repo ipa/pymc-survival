@@ -3,6 +3,7 @@ import pymc as pm
 import arviz as az
 import matplotlib.pyplot as plt
 
+
 def main():
     data = pd.read_csv("data/veteran.csv")
     X = data[['age', 'celltype', 'trt']]
@@ -23,7 +24,7 @@ def main():
     print(X_train.shape)
     print(y_train.shape)
 
-    with pm.Model() as model:
+    with pm.Model() as model:  # noqa: F841
         ell = pm.InverseGamma("ell", mu=1.0, sigma=0.5, shape=(n_predictors,))
         eta = pm.Exponential("eta", lam=1.0)
         cov = eta ** 2 * pm.gp.cov.ExpQuad(input_dim=n_predictors, ls=ell)
@@ -34,7 +35,7 @@ def main():
         # logit link and Bernoulli likelihood
         p = pm.Deterministic("p", pm.math.invlogit(f))
         # lambda_det = pm.Deterministic("lambda_det", pm.math.exp(f))
-        y_ = pm.Bernoulli("y", p=p, observed=y_train)
+        y_ = pm.Bernoulli("y", p=p, observed=y_train)  # noqa: F841
 
         # censor_ = at.eq(censor_, 1)
         # y = pm.Exponential("y", at.ones_like(time_uncensor_) / lambda_det[~censor_],
@@ -52,6 +53,7 @@ def main():
 
     az.plot_trace(trace)
     plt.show()
+
 
 if __name__ == "__main__":
     main()

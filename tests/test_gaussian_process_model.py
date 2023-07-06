@@ -3,10 +3,7 @@ import os
 import tempfile
 import unittest
 import arviz as az
-import matplotlib.pyplot as plt
-import pandas as pd
 from pathlib import Path
-import numpy as np
 from sklearn.model_selection import train_test_split
 
 from pmsurv.models.gaussian_process import GaussianProcessModel
@@ -14,19 +11,11 @@ import tests.syntheticdata
 
 warnings.simplefilter("ignore")
 
+
 class TestGaussianProcessModel(unittest.TestCase):
 
     def test_setup(self):
         print("test_setup")
-        priors = {
-            'lambda_mu': 0,
-            'lambda_sd': 5,
-            'k_mu': 0,
-            'k_sd': 5,
-            'coefs_mu': 0,
-            'coefs_sd': 0.5
-        }
-        included_features = ['a', 'b']
         wb_model = GaussianProcessModel()
         self.assertIsNotNone(wb_model)
         
@@ -66,7 +55,6 @@ class TestGaussianProcessModel(unittest.TestCase):
         summary = az.summary(wb_model.trace, filter_vars='like', var_names=["~f"])
         print(summary)
 
-
     def test_save_and_load(self):
         print("test_save_and_load")
         X, y = tests.syntheticdata.synthetic_data_random()
@@ -99,7 +87,6 @@ class TestGaussianProcessModel(unittest.TestCase):
 
     def test_score(self):
         print("test_fit_1")
-        included_features = ['a']
         X, y = tests.syntheticdata.synthetic_data_weibull(lam_ctrl=1, lam_trt=2.5, k=1)
         y[:, 1] = 1 - y[:, 1]  # inverse
 
@@ -114,7 +101,6 @@ class TestGaussianProcessModel(unittest.TestCase):
                     'return_inferencedata': True, 'nuts_sampler': 'nutpie' }
         wb_model = GaussianProcessModel()
         wb_model.fit(X_train, y_train, inference_args=fit_args)
-
 
         c_index = wb_model.score(X_test, y_test)
         print(f"c-index = {c_index}")
