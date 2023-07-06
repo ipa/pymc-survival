@@ -1,12 +1,8 @@
-# import warnings
-# warnings.simplefilter("ignore")
 import logging
-import pytensor.tensor as at
 import lifelines
 import pandas as pd
 import scipy.stats as st
 import numpy as np
-from numpy.random import default_rng
 import pymc as pm
 from pmsurv.exc import PyMCModelsError
 from pmsurv.models.base import BayesianModel
@@ -85,7 +81,7 @@ class ExponentialModel(BayesianModel):
                     return -(lam * time)
 
                 lambda_det_censor = lambda_det[censor_]
-                y_cens = pm.Potential(
+                y_cens = pm.Potential(  # noqa:F841
                     "y_cens", exponential_lccdf(pm.math.ones_like(time_censor_) / lambda_det_censor, time_censor_)
                 )
 
@@ -185,5 +181,4 @@ class ExponentialModel(BayesianModel):
         self.num_training_samples = params['num_training_samples']
         self.column_names = params['column_names']
         self.priors = params['priors']
-        # self.inference_args = params['inference_args']
         self.max_time = params['max_observed_time']

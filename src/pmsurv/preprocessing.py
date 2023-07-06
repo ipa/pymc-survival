@@ -1,12 +1,11 @@
 import warnings
-
-warnings.filterwarnings("ignore", category=DeprecationWarning)
-warnings.filterwarnings("ignore", category=FutureWarning)
-
 import numpy as np
 from sklearn import preprocessing
 from sklearn.pipeline import Pipeline
 import copy
+
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 
 class LogStandardScaler:

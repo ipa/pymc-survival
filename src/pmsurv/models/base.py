@@ -94,7 +94,7 @@ class BayesianModel(BaseEstimator):
             'cores': 1,
             'return_inferencedata': True,
             'progressbar': False if progress_bar is None else progress_bar,
-            'nuts_sampler': 'nutpie' if nuts_sampler is None else nuts_sampler
+            'nuts_sampler': 'pymc' if nuts_sampler is None else nuts_sampler
         }
         return inference_args
 

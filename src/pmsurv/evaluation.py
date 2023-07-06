@@ -12,7 +12,7 @@ def bootstrap_metric(metric_fxn, x, y, N=100):
 
     for _ in tqdm(range(N)):
         try:
-            resample_idx = np.random.choice(size, size=size, replace = True)
+            resample_idx = np.random.choice(size, size=size, replace=True)
             metric = metric_fxn(x[resample_idx, :], y[resample_idx, :])
             metrics.append(np.round(metric, 3))
         except ZeroDivisionError:
@@ -27,7 +27,7 @@ def bootstrap_metric(metric_fxn, x, y, N=100):
     }
 
 
-def evaluate_model(model, x, y, bootstrap = False):
+def evaluate_model(model, x, y, bootstrap=False):
     def ci(model):
         def cph_ci(x, y, **kwargs):
             # max_time = np.max(y[:,0])

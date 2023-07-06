@@ -18,7 +18,6 @@ class TreatmentRecommender:
             self.thresholds = json.load(json_file)
 
     def find_best_threshold(self, x, y):
-        import matplotlib.pyplot as plt
         surv_prob, _, _ = self.survival_model.predict(x)
         surv_prob_median = np.median(surv_prob, axis=1)
 
@@ -59,14 +58,13 @@ class TreatmentRecommender:
                                      'risk': risk})
         return df_risk
 
-
     def predict(self, x, treatment_options, threshold_idx='low_risk', treatment_idx=-1):
         import copy
         options_label = list(range(len(treatment_options)))
         x_ = copy.deepcopy(x)
         df_recommend = pd.DataFrame({'actual_treatment': x_[:, treatment_idx],
                                      'recommended': max(treatment_options)})
-        df_risk = pd.DataFrame(columns = ['treatment', 'risk'])
+        df_risk = pd.DataFrame(columns=['treatment', 'risk'])
         # print(treatment_options)
         n_samples = x_.shape[0]
         x_ = np.tile(x_, (len(treatment_options), 1))
