@@ -88,8 +88,6 @@ class WeibullModelLinear(WeibullModelBase):
                 k = pm.math.zeros_like(lambda_det)
             k_det = pm.Deterministic("k_det", pm.math.exp(k_intercept + k))
 
-            print(k.dtype, lambda_det.dtype)
-
             if y is not None:
                 censored_ = pm.math.eq(censor_, 1)
                 y = pm.Weibull("y", alpha=k_det[~censored_], beta=lambda_det[~censored_],
@@ -112,13 +110,13 @@ class WeibullModelLinear(WeibullModelBase):
             'num_pred': self.num_pred,
             'num_training_samples': self.num_training_samples
         }
-        print('store: ', self.priors)
+        logger.info('store: ', self.priors)
 
         super(WeibullModelLinear, self).save(file_prefix, custom_params)
 
     def load(self, file_prefix, **kwargs):
         params = super(WeibullModelLinear, self).load(file_prefix)
-        print('load: ', params['priors'])
+        logger.info('load: ', params['priors'])
         self.num_pred = params['num_pred']
         self.num_training_samples = params['num_training_samples']
         self.column_names = params['column_names']

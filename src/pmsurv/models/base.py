@@ -62,7 +62,6 @@ class BayesianModel(BaseEstimator):
             arguments to be passed to the PyMC sample method
             See PyMC doc for permissible values.
         """
-        logger.info(f"Using {inference_args['nuts_sampler']} sampler with {inference_args['progressbar']}")
         with self.cached_model:
             self.trace = pm.sample(**inference_args, random_seed=0)
 
