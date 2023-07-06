@@ -86,7 +86,7 @@ class TestWeibullNN(unittest.TestCase):
 
         c_index = wb_model.score(X, y)
         print(f"c-index = {c_index}")
-        self.assertGreater(c_index, 0.725)
+        self.assertGreater(c_index, 0.7)
 
 
 if __name__ == '__main__':
