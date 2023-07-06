@@ -13,12 +13,13 @@ on:
 env:
   CONTAINER_REGISTRY: ghcr.io
   CONTAINER_IMAGE_NAME: ${{ github.repository }}
+  BRANCH_NAME: ${GITHUB_REF##*/}
 
 jobs:
   build:
 
     runs-on: ubuntu-latest
-    container: ${{ env.REGISTRY }}/${{ env.CONTAINER_IMAGE_NAME }}:${GITHUB_REF##*/}
+    container: ghcr.io/ipa/pymc-survival:paper-new
     strategy:
       fail-fast: false
       matrix:
