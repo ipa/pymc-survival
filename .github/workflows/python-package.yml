@@ -10,11 +10,16 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
+env:
+  CONTAINER_REGISTRY: ghcr.io
+  CONTAINER_IMAGE_NAME: ${{ github.repository }}
+  BRANCH_NAME: ${GITHUB_REF##*/}
+
 jobs:
   build:
 
     runs-on: ubuntu-latest
-    container: ghcr.io/ipa/pymc-survival:pr-5
+    container: ghcr.io/ipa/pymc-survival:paper-new
     strategy:
       fail-fast: false
       matrix:
