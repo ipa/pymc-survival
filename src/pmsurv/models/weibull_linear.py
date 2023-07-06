@@ -59,7 +59,7 @@ class WeibullModelLinear(WeibullModelBase):
             logger.info("Priors: {}".format(str(self.priors)))
             lambda_intercept = pm.Normal("lambda_intercept",
                                          mu=self.priors['lambda_mu'] if 'lambda_intercept_mu' not in self.priors else self.priors['lambda_intercept_mu'],
-                                         sigma=self.priors['lambda_sd'] if 'lambda_intercept_sd' not in self.priors else self.priors['lambda_intercept_sd'])#.astype('float32')
+                                         sigma=self.priors['lambda_sd'] if 'lambda_intercept_sd' not in self.priors else self.priors['lambda_intercept_sd'])  # .astype('float32')
 
             k_intercept = pm.Normal('k_intercept',
                                     mu=self.priors['k_mu'] if 'k_intercept_mu' not in self.priors else self.priors['k_intercept_mu'],

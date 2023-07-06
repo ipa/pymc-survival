@@ -21,7 +21,7 @@ class WeibullModelNN(WeibullModelBase):
         self.layers = []
         self.k_constant = k_constant
         self.priors_sd = priors_sd
-  
+
     def __str__(self):
         str_output = ""
         for idx, l in enumerate(self.layers):
