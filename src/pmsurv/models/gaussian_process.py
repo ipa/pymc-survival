@@ -11,6 +11,8 @@ import pmsurv.utils
 class GaussianProcessModel(BayesianModel):
     def __init__(self):
         super(GaussianProcessModel, self).__init__()
+        from warnings import warn
+        warn('This model is not yet supported and under development!', UserWarning)
         self.column_names = None
         self.max_time = None
         self.priors = None
