@@ -1,14 +1,14 @@
 name: Docker Image CI
 
 on:
-  push:
-    branches: [ "main", "create-dockerimage" ]
-    paths:
-      - Dockerfile
-  pull_request:
-    branches: [ "main", "create-dockerimage"  ]
-    paths:
-      - Dockerfile
+  # push:
+  #   branches: [ "main", "create-dockerimage" ]
+  #   paths:
+  #     - Dockerfile
+  # pull_request:
+  #   branches: [ "main", "create-dockerimage"  ]
+  #   paths:
+  #     - Dockerfile
   workflow_dispatch:
 
 env:
@@ -26,10 +26,6 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
       
-    #- uses: actions/checkout@v3
-    #- name: Build the Docker image
-    #  run: docker build . --file Dockerfile --target pymc-cuda --tag pymc-survival:base-$(date +%s)
-    
     - name: Log in to the Container registry
       uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
       with:
@@ -48,6 +44,7 @@ jobs:
       with:
         context: .
         push: true
+        target: pymc-survival
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
 

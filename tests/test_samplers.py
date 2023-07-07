@@ -1,10 +1,12 @@
 import warnings
 import unittest
-
+import logging
 from pmsurv.models.exponential_model import ExponentialModel
 import tests.syntheticdata
 
 warnings.simplefilter("ignore")
+
+logger = logging.getLogger(__name__)
 
 
 class TestSamplers(unittest.TestCase):
@@ -17,7 +19,7 @@ class TestSamplers(unittest.TestCase):
         return X, y
 
     def test_fit_pymc(self):
-        print("test_fit_pymc")
+        logger.info("test_fit_pymc")
 
         X, y = TestSamplers.get_data()
 
@@ -30,7 +32,7 @@ class TestSamplers(unittest.TestCase):
         self.assertTrue(True)
 
     def test_fit_nutpie(self):
-        print("test_fit_pymc")
+        logger.info("test_fit_pymc")
 
         X, y = TestSamplers.get_data()
 
@@ -44,7 +46,7 @@ class TestSamplers(unittest.TestCase):
 
     @unittest.skip("Requires modification for JAX upgrade")
     def test_fit_blackjax(self):
-        print("test_fit_blackjax")
+        logger.info("test_fit_blackjax")
 
         X, y = TestSamplers.get_data()
 
@@ -58,7 +60,7 @@ class TestSamplers(unittest.TestCase):
 
     @unittest.skip("Requires modification for JAX upgrade")
     def test_fit_numpyro(self):
-        print("test_fit_numpyro")
+        logger.info("test_fit_numpyro")
 
         X, y = TestSamplers.get_data()
 

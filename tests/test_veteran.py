@@ -1,12 +1,16 @@
 import unittest
+import logging
 import pandas as pd
 from pmsurv.models.weibull_linear import WeibullModelLinear
 from pmsurv.models.exponential_model import ExponentialModel
 import arviz as az
 
+logger = logging.getLogger(__name__)
 
-class MyTestCase(unittest.TestCase):
+
+class TestVeteranDataset(unittest.TestCase):
     def test_weibull_linear_veteran(self):
+        logger.info("test_weibull_linear_veteran")
         data = pd.read_csv("tests/data/veteran.csv")
         X = data[['age', 'celltype', 'trt']]
         X['celltype_1'] = data['celltype'] == 1
@@ -24,12 +28,13 @@ class MyTestCase(unittest.TestCase):
         wb_model.fit(X, y, inference_args=fit_args)
 
         summary = az.summary(wb_model.trace, filter_vars='like', var_names=["~k_det", "~lambda_det"])
-        print(summary)
+        logger.info(summary)
 
         c_index = wb_model.score(X, y)
-        print(c_index)
+        logger.info(c_index)
 
     def test_exponential_linear_veteran(self):
+        logger.info("test_exponential_linear_veteran")
         data = pd.read_csv("tests/data/veteran.csv")
         X = data[['age']]
         X['celltype_2'] = data['celltype'] == 2
@@ -49,10 +54,10 @@ class MyTestCase(unittest.TestCase):
         wb_model.fit(X, y, inference_args=fit_args)
 
         summary = az.summary(wb_model.trace, filter_vars='like', var_names=["~k_det", "~lambda_det"])
-        print(summary)
+        logger.info(summary)
 
         c_index = wb_model.score(X, y)
-        print(c_index)
+        logger.info(c_index)
 
 
 if __name__ == '__main__':
