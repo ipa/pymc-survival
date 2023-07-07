@@ -18,7 +18,7 @@ class TestGaussianProcessModel(unittest.TestCase):
         print("test_setup")
         wb_model = GaussianProcessModel()
         self.assertIsNotNone(wb_model)
-        
+
     def test_create_model(self):
         print("test_create_model")
         lam_ctrl = 1
@@ -29,7 +29,7 @@ class TestGaussianProcessModel(unittest.TestCase):
 
         wb_model = GaussianProcessModel()
         fit_args = {'draws': 100, 'tune': 100, 'chains': 2, 'cores': 1,
-                    'return_inferencedata': True, 'nuts_sampler': 'nutpie' }
+                    'return_inferencedata': True, 'nuts_sampler': 'nutpie'}
         wb_model.fit(X, y, inference_args=fit_args)
 
         summary = az.summary(wb_model.trace, filter_vars='like', var_names=["~f"])
@@ -46,11 +46,11 @@ class TestGaussianProcessModel(unittest.TestCase):
         y[:, 1] = 1 - y[:, 1]  # inverse
 
         fit_args = {'draws': 100, 'tune': 50, 'target_accept': 0.85,  'chains': 2, 'cores': 1,
-                    'return_inferencedata': True, 'nuts_sampler': 'nutpie' }
+                    'return_inferencedata': True, 'nuts_sampler': 'nutpie'}
         try:
             wb_model = GaussianProcessModel()
             wb_model.fit(X, y, inference_args=fit_args)
-        except:
+        except:  # noqa:E722
             self.assertTrue(False)
         summary = az.summary(wb_model.trace, filter_vars='like', var_names=["~f"])
         print(summary)
@@ -60,7 +60,7 @@ class TestGaussianProcessModel(unittest.TestCase):
         X, y = tests.syntheticdata.synthetic_data_random()
         print(X.shape, y.shape)
         fit_args = {'draws': 100, 'tune': 100, 'chains': 2, 'cores': 1,
-                    'return_inferencedata': True, 'nuts_sampler': 'nutpie' }
+                    'return_inferencedata': True, 'nuts_sampler': 'nutpie'}
         wb_model = GaussianProcessModel()
         wb_model.fit(X, y, inference_args=fit_args)
 
@@ -98,7 +98,7 @@ class TestGaussianProcessModel(unittest.TestCase):
         y_test = y_test.astype(float)
 
         fit_args = {'draws': 500, 'tune': 250, 'target_accept': 0.85, 'chains': 2, 'cores': 1,
-                    'return_inferencedata': True, 'nuts_sampler': 'nutpie' }
+                    'return_inferencedata': True, 'nuts_sampler': 'nutpie'}
         wb_model = GaussianProcessModel()
         wb_model.fit(X_train, y_train, inference_args=fit_args)
 

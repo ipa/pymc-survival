@@ -48,7 +48,7 @@ class ExponentialModel(BayesianModel):
             if X is None:
                 X = np.zeros([self.num_training_samples, self.num_pred])
 
-            model_input = pm.MutableData("model_input", X)#.astype('float32')
+            model_input = pm.MutableData("model_input", X)
             if y is not None:
                 time_censor_ = pm.MutableData("time_censor", y[y[:, 1] == 1, 0]).astype('float32')
                 time_uncensor_ = pm.MutableData("time_uncensor", y[y[:, 1] == 0, 0]).astype('float32')
@@ -58,8 +58,8 @@ class ExponentialModel(BayesianModel):
             logger.info("Priors: {}".format(str(self.priors)))
 
             lambda_intercept = pm.Normal("lambda_intercept",
-                                         mu=self.priors['lambda_mu'] if f'lambda_intercept_mu' not in self.priors else self.priors[f'lambda_intercept_mu'],
-                                         sigma=self.priors['lambda_sd'] if f'lambda_intercept_sd' not in self.priors else self.priors[f'lambda_intercept_sd']).astype('float32')
+                                         mu=self.priors['lambda_mu'] if 'lambda_intercept_mu' not in self.priors else self.priors['lambda_intercept_mu'],
+                                         sigma=self.priors['lambda_sd'] if 'lambda_intercept_sd' not in self.priors else self.priors['lambda_intercept_sd']).astype('float32')
 
             lambda_coefs = []
             for i, cn in enumerate(self.column_names):
@@ -114,7 +114,7 @@ class ExponentialModel(BayesianModel):
                 'time_uncensor': y[y[:, 1] == 0, 0],
                 'censor': y[:, 1].astype(np.int32)
             })
-        
+
         self._inference(inference_args)
 
         return self

@@ -54,8 +54,8 @@ class TreatmentRecommender:
         median_risk = 1 - surv_prob_median
         risk = ["Low" if x < self.thresholds[threshold_idx] else "High" for x in median_risk]
         df_risk = pd.DataFrame({'time': 0 if y is None else y[:, 0],
-                                     'event': 0 if y is None else 1 - y[:, 1],
-                                     'risk': risk})
+                                'event': 0 if y is None else 1 - y[:, 1],
+                                'risk': risk})
         return df_risk
 
     def predict(self, x, treatment_options, threshold_idx='low_risk', treatment_idx=-1):
@@ -68,7 +68,7 @@ class TreatmentRecommender:
         # print(treatment_options)
         n_samples = x_.shape[0]
         x_ = np.tile(x_, (len(treatment_options), 1))
-        
+
         treatment_options_rep = np.repeat(treatment_options, n_samples)
         x_[:, treatment_idx] = treatment_options_rep
         surv_prob, _, _ = self.survival_model.predict(x_)
@@ -97,4 +97,3 @@ class TreatmentRecommender:
                 df_recommend.loc[ix, ['recommended']] = treatment
 
         return df_recommend, df_risk
-

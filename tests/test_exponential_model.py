@@ -3,10 +3,7 @@ import os
 import tempfile
 import unittest
 import arviz as az
-import matplotlib.pyplot as plt
-import pandas as pd
 from pathlib import Path
-
 from pmsurv.models.exponential_model import ExponentialModel
 import tests.syntheticdata
 

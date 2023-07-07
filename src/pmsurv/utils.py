@@ -32,7 +32,7 @@ def compare_survival(data, group_col, time_col, event_col, xticks, labels):
 
     kmf_high = KaplanMeierFitter()
     kmf_high.fit(data[time_col][~ix], data[event_col][~ix], label=labels[1])
-    ax = kmf_high.plot_survival_function(show_censors=True, ax=ax);
+    ax = kmf_high.plot_survival_function(show_censors=True, ax=ax)
     plotting.add_at_risk_counts(kmf_low, kmf_high, rows_to_show=['At risk'], xticks=xticks, ax=ax)
     log_rank_results = lifelines.statistics.logrank_test(data[time_col][ix], data[time_col][~ix],
                                                          data[event_col][ix], data[event_col][~ix])
@@ -45,4 +45,3 @@ def compare_survival(data, group_col, time_col, event_col, xticks, labels):
 
 def get_time_axis(start, end, resolution):
     return np.linspace(start, end, int((end - start) * resolution + 1))
-

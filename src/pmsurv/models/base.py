@@ -157,4 +157,3 @@ class BayesianModel(BaseEstimator):
         self.trace = az.from_netcdf(trace_file)
         custom_params = self.params['custom_params']
         return custom_params
-
