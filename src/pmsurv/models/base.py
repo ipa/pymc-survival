@@ -1,6 +1,6 @@
 # Adaptet from pymc-lean: https://github.com/pymc-learn/pymc-learn/blob/master/pmlearn/base.py
 import logging
-
+import os
 from sklearn.base import BaseEstimator
 import pymc as pm
 import arviz as az
@@ -45,6 +45,7 @@ class BayesianModel(BaseEstimator):
         if 'type' not in inference_args or 'nuts_sampler' in inference_args:
             self.__nuts_inference(inference_args)
         elif inference_args['type'] == 'nuts':
+            inference_args.pop('type')
             self.__nuts_inference(inference_args)
         elif inference_args['type'] == 'map':
             logger.info('fit with MAP')
@@ -64,7 +65,6 @@ class BayesianModel(BaseEstimator):
         with self.cached_model:
             self.trace = pm.sample(**inference_args, random_seed=0)
 
-
     @staticmethod
     def _get_default_inference_args():
         """
@@ -83,6 +83,9 @@ class BayesianModel(BaseEstimator):
         draws : int (defaults to 2000)
             number of samples to draw
         """
+        nuts_sampler = os.environ.get('PMSURV_SAMPLER')
+        progress_bar = os.environ.get('PMSURV_PROGRESSBAR')
+
         inference_args = {
             'draws': 2000,
             'tune': 1000,
@@ -90,9 +93,8 @@ class BayesianModel(BaseEstimator):
             'chains': 2,
             'cores': 1,
             'return_inferencedata': True,
-            'progressbar': False,
-            'type': 'nuts',
-            'nuts_sampler': 'pymc'
+            'progressbar': False if progress_bar is None else progress_bar,
+            'nuts_sampler': 'pymc' if nuts_sampler is None else nuts_sampler
         }
         return inference_args
 
@@ -155,4 +157,3 @@ class BayesianModel(BaseEstimator):
         self.trace = az.from_netcdf(trace_file)
         custom_params = self.params['custom_params']
         return custom_params
-

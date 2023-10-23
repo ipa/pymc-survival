@@ -1,6 +1,4 @@
 import copy
-import warnings
-warnings.simplefilter("ignore")
 import numpy as np
 from numpy.random import default_rng
 import pymc as pm
@@ -11,7 +9,7 @@ from pmsurv.models.weibull_base import WeibullModelBase
 
 
 class WeibullModelNN(WeibullModelBase):
-    def __init__(self, with_k=False, n_hidden_layers=1):
+    def __init__(self, k_constant=True, n_hidden_layers=1, priors_sd=0.25):
         super(WeibullModelNN, self).__init__()
         self.column_names = None
         self.max_time = None
@@ -21,42 +19,42 @@ class WeibullModelNN(WeibullModelBase):
         self.num_pred = None
         self.n_hidden_layers = n_hidden_layers
         self.layers = []
-        self.with_k = with_k
-  
+        self.k_constant = k_constant
+        self.priors_sd = priors_sd
+
     def __str__(self):
         str_output = ""
         for idx, l in enumerate(self.layers):
-            str_output += f'Layer %i:\t %s \n' % (idx, str(l))
+            str_output += 'Layer %i:\t %s \n' % (idx, str(l))
         return str_output
 
-    @staticmethod
-    def _get_default_priors():
+    def _get_priors(self):
         return {
-            'k_coefs': False,
+            'k_constant': False,
             'n_hidden_layers': [5, 5, 5],
             'lambda_mu': 1,
-            'lambda_sd': 10,
+            'lambda_sd': self.priors_sd * 40,
             'k_mu': 1,
-            'k_sd': 10,
+            'k_sd': self.priors_sd * 40,
             'coefs_mu': 0,
-            'coefs_sd': 0.25,
+            'coefs_sd': self.priors_sd,
             'lambda_coefs_mu': 0,
-            'lambda_coefs_sd': 0.25
+            'lambda_coefs_sd': self.priors_sd
         }
-
 
     def create_model(self, X=None, y=None, priors=None):
         if self.priors is None:
             self.priors = priors
         if self.priors is None:
-            self.priors = WeibullModelNN._get_default_priors()
+            self.priors = self._get_priors()
         self.priors['n_hidden_layers'] = [self.num_pred for i in range(self.n_hidden_layers)]
-        self.priors['k_coefs'] = self.with_k
+        self.priors['k_constant'] = self.k_constant
 
         print(self.priors['n_hidden_layers'])
         n_hidden_layers = copy.deepcopy(self.priors['n_hidden_layers'])
         n_hidden_layers.insert(0, self.num_pred)
-        n_hidden_layers.append(2)
+        output_dims = 1 if self.priors['k_constant'] else 2
+        n_hidden_layers.append(output_dims)
         print(n_hidden_layers)
 
         model = pm.Model()
@@ -95,19 +93,19 @@ class WeibullModelNN(WeibullModelBase):
                 lambda_intercept = pm.Normal("lambda_intercept",
                                              mu=self.priors['lambda_mu'],
                                              sigma=self.priors['lambda_sd'])
-                
+
                 k_intercept = pm.Normal('k_intercept',
                                         mu=self.priors['k_mu'],
                                         sigma=self.priors['k_sd'])
 
                 lambda_ = pm.Deterministic("lambda_det", pm.math.exp(lambda_intercept + x_hidden[:, 0]))
 
-                print('With k %s' % self.priors['k_coefs'])
-                if self.priors['k_coefs']:
-                    k_ = pm.Deterministic("k_det", pm.math.exp(k_intercept + x_hidden[:, 1]))
+                print('Keep k constant = %s' % self.priors['k_constant'])
+                if self.priors['k_constant']:
+                    k = pm.math.ones_like(x_hidden[:, 1])
+                    k_ = pm.Deterministic("k_det", pm.math.exp(k_intercept * k))  # + (x_hidden[:, 1] * k_constant)
                 else:
-                    k_constant = 0.0
-                    k_ = pm.Deterministic("k_det", pm.math.exp(k_intercept + (x_hidden[:,1] * k_constant)))
+                    k_ = pm.Deterministic("k_det", pm.math.exp(k_intercept + x_hidden[:, 1]))
 
                 censored = pm.math.eq(censor_, 1)
                 y = pm.Weibull("y", alpha=k_[~censored], beta=lambda_[~censored],
@@ -117,8 +115,8 @@ class WeibullModelNN(WeibullModelBase):
                     """ Log complementary cdf of Weibull distribution. """
                     return -((x / beta) ** alpha)
 
-                y_cens = pm.Potential("y_cens", weibull_lccdf(time_censor_, alpha=k_[censored],
-                                                          beta=lambda_[censored]))
+                y_cens = pm.Potential("y_cens", weibull_lccdf(time_censor_, alpha=k_[censored],  # noqa:F841
+                                                              beta=lambda_[censored]))
 
         return model
 
@@ -126,7 +124,6 @@ class WeibullModelNN(WeibullModelBase):
         custom_params = {
             'column_names': self.column_names,
             'priors': self.priors,
-            # 'inference_args': self.inference_args,
             'max_observed_time': self.max_time,
             'num_pred': self.num_pred,
             'num_training_samples': self.num_training_samples,
@@ -141,13 +138,11 @@ class WeibullModelNN(WeibullModelBase):
         self.num_pred = params['num_pred']
         self.num_training_samples = params['num_training_samples']
         self.priors = params['priors']
-        # self.inference_args = params['inference_args']
         self.max_time = params['max_observed_time']
 
     def __show_graph(self):
         try:
             print("show graph")
-            import matplotlib.pyplot as plt
             g = pm.model_to_graphviz(self.cached_model)
             g.render("graphname", format="png")
         except ImportError:

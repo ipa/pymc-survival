@@ -1,7 +1,7 @@
 ---
 title: "Bayesian parametric models for survival prediction in medical applications"
 subtitle: "Retraining using Bayes rule"
-date: "12-02-2022"
+date: "07-02-2022"
 author:
   - name: Iwan Paolucci, PhD
     affiliation: "MD Anderson Cancer Center, Department of Interventional Radiology, Houston, TX, USA"
@@ -23,6 +23,7 @@ The aim of this experiment was to test whether continuous learning using Bayesia
 
 ```{r global-options, include=FALSE}
 library(knitr)
+library(Cairo)
 npj.fig.width.1 <- 88 / 25.4
 npj.fig.width.2 <- 180 / 25.4
 knitr::opts_chunk$set(fig.width=npj.fig.width.2, fig.path='out/figs/', 
@@ -49,35 +50,35 @@ library(stringr)
 redownload <- FALSE
 
 if (redownload) {
-  src_folder <- 'U:/src/pymc-survival/examples/experiments/results_retrain'
+  src_folder <- 'U:/src/pymc-survival/paper/experiments/results_retrain'
   numbering <- c(rep(seq(1, 75), each=18),
                      rep(seq(1, 75), each=10),
                      rep(seq(1, 75), each=10),
                      rep(seq(1, 75), each=10))
   length(numbering)
   
-  data.exp <- rbind(read.csv(paste(src_folder, 'pm_exp_aids/results.csv', sep = '/')),
-                    read.csv(paste(src_folder, 'pm_exp_gbcs/results.csv', sep = '/')),
-                    read.csv(paste(src_folder, 'pm_exp_pbc/results.csv', sep = '/')),
-                    read.csv(paste(src_folder, 'pm_exp_whas/results.csv', sep = '/'))
+  data.exp <- rbind(read.csv(paste(src_folder, 'exp_aids/results.csv', sep = '/')),
+                    read.csv(paste(src_folder, 'exp_gbcs/results.csv', sep = '/')),
+                    read.csv(paste(src_folder, 'exp_pbc/results.csv', sep = '/')),
+                    read.csv(paste(src_folder, 'exp_whas/results.csv', sep = '/'))
                     )
   data.exp$run <- numbering
   
-  data.wb <- rbind(read.csv(paste(src_folder, 'pm_wb_aids/results.csv', sep = '/')),
-                   read.csv(paste(src_folder, 'pm_wb_gbcs/results.csv', sep = '/')),
-                   read.csv(paste(src_folder, 'pm_wb_pbc/results.csv', sep = '/')),
-                   read.csv(paste(src_folder, 'pm_wb_whas/results.csv', sep = '/'))
+  data.wb <- rbind(read.csv(paste(src_folder, 'wb_aids/results.csv', sep = '/')),
+                   read.csv(paste(src_folder, 'wb_gbcs/results.csv', sep = '/')),
+                   read.csv(paste(src_folder, 'wb_pbc/results.csv', sep = '/')),
+                   read.csv(paste(src_folder, 'wb_whas/results.csv', sep = '/'))
                    )
   data.wb$run <- numbering
   
   data.dps <- rbind(read.csv(paste(src_folder, 'deepsurv_aids/results.csv', sep = '/')),
+                    read.csv(paste(src_folder, 'deepsurv_gbcs/results.csv', sep = '/')),
                     read.csv(paste(src_folder, 'deepsurv_pbc/results.csv', sep = '/')),
-                    read.csv(paste(src_folder, 'deepsurv_whas/results.csv', sep = '/')),
-                    read.csv(paste(src_folder, 'deepsurv_gbcs/results.csv', sep = '/'))
+                    read.csv(paste(src_folder, 'deepsurv_whas/results.csv', sep = '/'))
                    )
   data.dps$run <- numbering
   
-  data <- rbind(data.exp, data.wb, data.dps)
+  data <- rbind(data.exp, data.dps, data.wb)
   
   write.csv(data, file = 'data/results_retraining.csv', row.names = FALSE)
 
@@ -91,7 +92,7 @@ if (redownload) {
 
 ```{r load-data-2}
 data <- read.csv('data/results_retraining.csv') %>%
-  filter(run <= 75)
+  filter(run <= 75 )
 ```
 
 ## Preprocess data
@@ -123,7 +124,7 @@ data <- data %>%
   mutate(experiment_lbl = factor(experiment, 
                                  labels = c("ACTG", "GBCS", "PBC", "WHAS")),
          model_lbl = factor(model, 
-                            labels = c("DeepSurv", "PM Exp", "PM Wb")),
+                            labels = c("DeepSurv", "BPS Exp", "BPS Wb")),
          train_type_lbl = factor(train_type, 
                                  labels = c("Complete data", "Model updating")),
          run_iter = paste(run, iter, sep = '/'))
@@ -133,7 +134,7 @@ data.merge <- data.merge %>%
   mutate(experiment_lbl = factor(experiment, 
                                  labels = c("ACTG", "GBCS", "PBC", "WHAS")),
          model_lbl = factor(model, 
-                            labels = c("DeepSurv", "PM Exp", "PM Wb")),
+                            labels = c("DeepSurv", "BPS Exp", "BPS Wb")),
          run_iter = paste(run, iter, sep = '/'))
 
 ```
@@ -159,14 +160,14 @@ data %>%
 
 Group data for plotting first to enable median and CI 95%.
 
-```{r , message=FALSE}
+```{r , message=FALSE, warning=FALSE}
 data.grouped <- data %>%
   group_by(experiment_lbl, model_lbl, train_type_lbl, iter) %>%
   summarise(
     n = n(),
     median = median(cindex),
-    median_lower = wilcox.test(cindex, conf.int = TRUE)$conf.int[1],
-    median_upper = wilcox.test(cindex, conf.int = TRUE)$conf.int[2]
+    median_lower = wilcox.test(cindex, conf.int = TRUE, exact = FALSE)$conf.int[1],
+    median_upper = wilcox.test(cindex, conf.int = TRUE, exact = FALSE)$conf.int[2]
   )
 
 data.merged.grouped <- data.merge %>%
@@ -174,11 +175,14 @@ data.merged.grouped <- data.merge %>%
   summarise(
     n = n(),
     median = median(cindex.diff),
-    median_lower = wilcox.test(cindex.diff, conf.int = TRUE)$conf.int[1],
-    median_upper = wilcox.test(cindex.diff, conf.int = TRUE)$conf.int[2],
-    p = wilcox.test(cindex.diff)$p.value
+    median_lower = wilcox.test(cindex.diff, conf.int = TRUE, exact = FALSE)$conf.int[1],
+    median_upper = wilcox.test(cindex.diff, conf.int = TRUE, exact = FALSE)$conf.int[2],
+    p = wilcox.test(cindex.diff, exact = FALSE)$p.value
   )
+
 ```
+
+\newpage
 
 ## Performence over time by experiment and model
 
@@ -198,6 +202,8 @@ plt.all <- ggpar(plt.all, ylab = 'C-Index', xlab = 'Partition', legend.title = "
 plt.all
 
 ```
+
+\newpage
 
 ## Difference between training types
 
@@ -219,7 +225,7 @@ plt.all <- ggpar(plt.all, ylab = 'Difference in C-Index', xlab = 'Partition', le
 plt.all
 ```
 
-
+\newpage
 
 ## Test for equivalence
 
@@ -267,6 +273,7 @@ comparisons %>% gt() %>% gtsave(filename = 'out/results_retrain.rtf')
 ```
 
 ```{r plt-equiv-test, fig.width=7, fig.asp=0.9}
+
 ggscatter(data = comparisons, x = 'Model', y = 'HDI_mean',
           facet.by = 'Experiment',
           color = 'Model', palette = 'lancet', ylab = 'Difference in C-Index') +
@@ -345,23 +352,3 @@ plt.whas <- ggpar(plt.whas, ylab = 'C-Index', xlab = '', legend.title = "Trainin
 plt.whas
 ```
 
-
-\newpage
-
-# Diagnostics
-
-## Check distributionof C-Indexes
-
-Compute Shapiro test for C-index on each experiment/model combination.
-
-```{r}
-data %>%
-  group_by(model_lbl, experiment_lbl, iter, train_type) %>%
-  summarise(n = n(),
-            shap_test = round(shapiro.test(cindex)$p.value, 3),
-            is_normal = (shapiro.test(cindex)$p.value > 0.05),
-            sd = sd(cindex)
-            )
-```
-
-There are a few cases where the C-Indexes are not normally distributed. 

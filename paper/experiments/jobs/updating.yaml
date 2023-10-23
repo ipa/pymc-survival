@@ -1,0 +1,25 @@
+template: 'job-template-updating.lsf'
+models: 
+  deepsurv: 
+    name: 'deepsurv'
+    nodes: 5
+    short_name: 'deepsurv'
+    walltime: 1
+    memory: 8
+  pmsurv_exponential:
+    name: 'pmsurv_exponential' 
+    nodes: 5
+    short_name: 'exp'
+    walltime: 6
+    memory: 12
+  pmsurv_weibull_linear: 
+    name: 'pmsurv_weibull_linear' 
+    nodes: 5
+    short_name: 'wb'
+    walltime: 6
+    memory: 12
+datasets:
+  - aids
+  - gbcs
+  - pbc
+  - whas

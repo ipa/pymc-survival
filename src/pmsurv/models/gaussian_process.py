@@ -1,9 +1,6 @@
-# import warnings
-# warnings.simplefilter("ignore")
 import lifelines
 import scipy.stats as st
 import numpy as np
-from numpy.random import default_rng
 import pandas as pd
 import pymc as pm
 from pmsurv.exc import PyMCModelsError
@@ -14,6 +11,8 @@ import pmsurv.utils
 class GaussianProcessModel(BayesianModel):
     def __init__(self):
         super(GaussianProcessModel, self).__init__()
+        from warnings import warn
+        warn('This model is not yet supported and under development!', UserWarning)
         self.column_names = None
         self.max_time = None
         self.priors = None
@@ -67,22 +66,22 @@ class GaussianProcessModel(BayesianModel):
             f = self.gp.prior("f", X=model_input)
 
             lambda_intercept = pm.Normal("lambda_intercept",
-                                         mu=self.priors['lambda_mu'] if f'lambda_intercept_mu' not in self.priors else self.priors[f'lambda_intercept_mu'],
-                                         sigma=self.priors['lambda_sd'] if f'lambda_intercept_sd' not in self.priors else self.priors[f'lambda_intercept_sd'])
+                                         mu=self.priors['lambda_mu'] if 'lambda_intercept_mu' not in self.priors else self.priors['lambda_intercept_mu'],
+                                         sigma=self.priors['lambda_sd'] if 'lambda_intercept_sd' not in self.priors else self.priors['lambda_intercept_sd'])
 
             # lambda_det = pm.Deterministic("lambda_det", pm.math.exp(lambda_intercept + f))
             lambda_det = pm.math.exp(lambda_intercept + f)
 
             if y is not None:
                 censored_ = pm.math.eq(censor_, 1)
-                y_ = pm.Exponential("y", pm.math.ones_like(time_uncensor_) / lambda_det[~censored_],
+                y_ = pm.Exponential("y", pm.math.ones_like(time_uncensor_) / lambda_det[~censored_],   # noqa:F841
                                     observed=time_uncensor_)
 
                 def exponential_lccdf(lam, time):
                     """ Log complementary cdf of Exponential distribution. """
                     return -(lam * time)
 
-                y_cens = pm.Potential(
+                y_cens = pm.Potential(  # noqa:F841
                     "y_cens",
                     exponential_lccdf(pm.math.ones_like(time_censor_) / lambda_det[censored_],
                                       time_censor_)
@@ -108,7 +107,6 @@ class GaussianProcessModel(BayesianModel):
             inference_args['draws'] = int(inference_args['draws'] / 8)
             inference_args['tune'] = int(inference_args['tune'] / 8)
             inference_args['type'] = 'blackjax'
-            #inference_args['type'] = 'map'
 
         if self.cached_model is None:
             print('create from fit')
@@ -143,7 +141,7 @@ class GaussianProcessModel(BayesianModel):
 
             f_pred = self.gp.conditional("f_pred", X, jitter=1e-4)
             lambda_intercept = self.cached_model.named_vars['lambda_intercept']
-            p_pred = pm.Deterministic("lambda_det_pred", pm.math.exp(lambda_intercept + f_pred))
+            p_pred = pm.Deterministic("lambda_det_pred", pm.math.exp(lambda_intercept + f_pred))   # noqa:F841
 
         ppc = pm.sample_posterior_predictive(self.trace, model=self.cached_model, return_inferencedata=False,
                                              random_seed=0, var_names=["f_pred", "lambda_det_pred"])
@@ -177,7 +175,6 @@ class GaussianProcessModel(BayesianModel):
         custom_params = {
             'column_names': self.column_names,
             'priors': self.priors,
-            # 'inference_args': self.inference_args,
             'max_observed_time': self.max_time,
             'num_pred': self.num_pred,
             'num_training_samples': self.num_training_samples
@@ -193,5 +190,4 @@ class GaussianProcessModel(BayesianModel):
         self.num_training_samples = params['num_training_samples']
         self.column_names = params['column_names']
         self.priors = params['priors']
-        # self.inference_args = params['inference_args']
         self.max_time = params['max_observed_time']

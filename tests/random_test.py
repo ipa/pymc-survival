@@ -1,20 +1,12 @@
 import warnings
-
-warnings.simplefilter("ignore")
 import numpy as np
 from numpy.random import default_rng
 import pymc as pm
-import aesara
 import arviz as az
 import time
 
-# import pymc.sampling_jax
-# aesara.compile.mode.Mode(linker='cvm', optimizer='fast_run')
-# aesara.compile.mode.DebugMode()
-# aesara.config.compute_test_value = 'warn'
-# aesara.config.exception_verbosity = 'high'
+warnings.simplefilter("ignore")
 
-print(aesara.compile.mode)
 
 def synthetic_data_random(n_samples=100):
     rng = default_rng(seed=0)
@@ -61,7 +53,7 @@ def main():
             """ Log complementary cdf of Weibull distribution. """
             return -((x / beta) ** alpha)
 
-        y_cens = pm.Potential("y_cens", weibull_lccdf(time_obs[censor], alpha=k_[censor], beta=lambda_[censor]))
+        y_cens = pm.Potential("y_cens", weibull_lccdf(time_obs[censor], alpha=k_[censor], beta=lambda_[censor]))  # noqa:F841
 
     end = time.time()
     print('compile: ', end - start)
@@ -73,6 +65,7 @@ def main():
     print('sample: ', end - start)
 
     print(az.summary(trace, var_names=["lambda_coefs", "lambda_intercept", "k_intercept", 'k_coefs'], filter_vars='like'))
+
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,305 @@
+---
+title: "Bayesian parametric models for survival prediction in medical applications"
+subtitle: "Visualization posterior distributions"
+date: "12-02-2022"
+author:
+  - name: Iwan Paolucci, PhD
+    affiliation: "MD Anderson Cancer Center, Department of Interventional Radiology, Houston, TX, USA"
+    orcid: 0000-0002-9393-3015
+toc: true
+format: pdf
+editor: source
+---
+
+```{r}
+library(Cairo)
+library(ggplot2)
+library(ggpubr)
+library(ggsci)
+library(dplyr)
+library(stringr)
+```
+
+```{r}
+knitr::opts_chunk$set(dev.args = list(png = list(type = "cairo")),
+                      fig.path='out/figs/posterior/', dev = c('pdf', 'png'), dpi = 300)
+```
+
+
+# Load data
+
+
+```{r}
+redownload <- TRUE
+
+if (redownload){
+  src_folder <- 'U:/src/pymc-survival/paper/experiments/results_retrain'
+  file <- "posterior_5.csv"
+  
+  data.exp <- rbind(
+    read.csv(paste(src_folder, 'exp_gbcs', file, sep = '/')) %>% mutate(experiment = 'gbcs'),
+    read.csv(paste(src_folder, 'exp_whas', file, sep = '/')) %>% mutate(experiment = 'whas'),
+    read.csv(paste(src_folder, 'exp_pbc', file, sep = '/')) %>% mutate(experiment = 'pbc'),
+    read.csv(paste(src_folder, 'exp_aids', file, sep = '/')) %>% mutate(experiment = 'actg')
+  )
+  
+  
+  data.wb <- rbind(
+    read.csv(paste(src_folder, 'wb_gbcs', file, sep = '/')) %>% mutate(experiment = 'gbcs', model = 'pm_wb'),
+    read.csv(paste(src_folder, 'wb_whas', file, sep = '/')) %>% mutate(experiment = 'whas', model = 'pm_wb'),
+    read.csv(paste(src_folder, 'wb_pbc', file, sep = '/')) %>% mutate(experiment = 'pbc', model = 'pm_wb'),
+    read.csv(paste(src_folder, 'wb_aids', file, sep = '/')) %>% mutate(experiment = 'actg', model = 'pm_wb')
+  )
+  
+  data <- rbind(data.exp, data.wb)
+  
+  data <- data %>% 
+    mutate(
+      experiment_lbl = as.factor(experiment),
+      model_lbl = as.factor(model)
+    )
+  
+  save(data, file = 'data/posteriors.rds')
+}
+```
+
+```{r}
+load('data/posteriors.rds')
+```
+
+```{r}
+
+data <- data %>% 
+  mutate(
+    posterior_samples = posterior_sampled,
+    posterior_type_lbl = factor(posterior_type, labels = c('Full', 'Retrain'))
+  ) %>% 
+  select(-posterior, -posterior_sampled) 
+
+data <- data %>%
+  filter((!var %in% c('lambda_yrgrp_1975 & 1978', 'lambda_yrgrp_1981 & 1984', 'lambda_yrgrp_1986 & 1988')))
+
+```
+
+```{r}
+
+plot_density <- function(data, experiment_str, model_str, var_str){
+  
+  data.filter <- data %>%
+    filter(experiment == experiment_str & model == model_str) %>%
+    mutate(partition_lbl = factor(partition, 
+                                  labels = paste("P", unique(partition), sep = "")),
+           var_lbl = factor(str_replace(var, 'lambda_', '')))
+  # 
+  # data.filter$partition_lbl = factor(data.filter$partition, 
+  #                                    labels = paste("P", unique(data.filter$partition), sep = ""))
+  
+  p1 <- ggdensity(data = data.filter %>% filter(var == var_str) ,
+          x = 'posterior_samples', y = 'density', 
+          add = 'median', 
+          color = 'partition_lbl', size = 1,
+          fill = 'partition_lbl', alpha = 0.005,
+          facet.by = c('var_lbl', 'posterior_type_lbl' ),
+          ylab = 'Density', xlab = 'Posterior samples',
+          palette = get_palette(c("orange", "red"), length(levels(data.filter$partition_lbl)))) +
+    labs(fill = "Partition", color = 'Partition')
+  return (p1)
+}
+
+plot_density_2 <- function(data, experiment_str, model_str, var_str, add_normal=FALSE) {
+  data.filter <- data %>%
+    filter(experiment == experiment_str & model == model_str) %>%
+  mutate(
+    partition_lbl = factor(partition, 
+                           labels = paste("P", unique(partition), sep = "")),
+    var_lbl = factor(str_replace(var, 'lambda_', ''))
+  )
+  
+  p <- ggdensity(data = data.filter %>% filter(var == var_str) ,
+            x = 'posterior_samples', y = 'density',
+            add = 'median', 
+            color = 'posterior_type_lbl', size = 1, 
+            fill = 'posterior_type_lbl', alpha = 0.1,
+            facet.by = c('var_lbl', 'partition_lbl' ),
+            palette = 'npg',
+            ylab = 'Density', xlab = 'Posterior samples') +
+    labs(fill = "Training type", color = 'Training type')
+  
+  if (add_normal) {
+    norm_dens <- data.frame(samples = rnorm(100)) 
+    p <- p + stat_overlay_normal_density(
+              data = norm_dens, aes(x = samples),
+              linetype = "dashed" )
+  }
+  
+  return(p)
+}
+
+```
+
+
+# Exponential
+
+## WHAS
+
+
+
+```{r whas-posterior-type, fig.width=7, fig.asp=0.375}
+
+whas_vars <- data %>% filter(experiment == 'whas' & model == 'pm_exp') %>% select(var) %>% unique(.)
+
+for(var_idx in unique(whas_vars$var)){
+  p1 <- plot_density(data, 'whas', 'pm_exp', var_idx)
+  plot(p1)
+  
+  p <- plot_density_2(data, 'whas', 'pm_exp', var_idx)
+  plot(p)
+
+}
+
+
+```
+
+
+
+## GBCS
+
+
+```{r gbcs-posterior-type, fig.width=7, fig.asp=0.5}
+
+gbcs_vars <- data %>% filter(experiment == 'gbcs' & model == 'pm_exp') %>% select(var) %>% unique(.)
+
+
+for(var_idx in unique(gbcs_vars$var)){
+  p1 <- plot_density(data, 'gbcs', 'pm_exp', var_idx)
+  plot(p1)
+  
+  p <- plot_density_2(data, 'gbcs', 'pm_exp', var_idx)
+  plot(p)
+}
+
+
+```
+
+
+## PBC
+
+
+```{r pbc-posterior-type, fig.width=7, fig.asp=0.5}
+
+pbc_vars <- data %>% filter(experiment == 'pbc' & model == 'pm_exp') %>% select(var) %>% unique(.)
+
+
+for(var_idx in unique(pbc_vars$var)){
+  p1 <- plot_density(data, 'pbc', 'pm_exp', var_idx)
+  plot(p1)
+  
+  p <- plot_density_2(data, 'pbc', 'pm_exp', var_idx)
+  plot(p)
+}
+
+
+```
+
+
+## ACTG
+
+
+```{r actg-posterior-type, fig.width=7, fig.asp=0.5}
+
+pbc_vars <- data %>% filter(experiment == 'actg' & model == 'pm_exp') %>% select(var) %>% unique(.)
+
+
+for(var_idx in unique(pbc_vars$var)){
+  p1 <- plot_density(data, 'actg', 'pm_exp', var_idx)
+  plot(p1)
+  
+  p <- plot_density_2(data, 'actg', 'pm_exp', var_idx)
+  plot(p)
+}
+
+
+```
+
+
+
+# Weibull
+
+## WHAS
+
+
+
+```{r whas-posterior-type-wb, fig.width=7, fig.asp=0.5}
+
+whas_vars <- data %>% filter(experiment == 'whas') %>% select(var) %>% unique(.)
+
+for(var_idx in unique(whas_vars$var)){
+  p1 <- plot_density(data, 'whas', 'pm_wb', var_idx)
+  plot(p1)
+  
+  p <- plot_density_2(data, 'whas', 'pm_wb', var_idx)
+  plot(p)
+}
+
+
+```
+
+
+
+## GBCS
+
+
+```{r gbcs-posterior-type-wb, fig.width=7, fig.asp=0.5}
+
+gbcs_vars <- data %>% filter(experiment == 'gbcs') %>% select(var) %>% unique(.)
+
+
+for(var_idx in unique(gbcs_vars$var)){
+  p1 <- plot_density(data, 'gbcs', 'pm_wb', var_idx)
+  plot(p1)
+  
+  p <- plot_density_2(data, 'gbcs', 'pm_wb', var_idx)
+  plot(p)
+}
+
+
+```
+
+
+## PBC
+
+
+```{r pbc-posterior-type-wb, fig.width=7, fig.asp=0.5}
+
+pbc_vars <- data %>% filter(experiment == 'pbc') %>% select(var) %>% unique(.)
+
+for(var_idx in unique(pbc_vars$var)){
+  p1 <- plot_density(data, 'pbc', 'pm_wb', var_idx)
+  plot(p1)
+  
+  p <- plot_density_2(data, 'pbc', 'pm_wb', var_idx)
+  plot(p)
+}
+
+
+```
+
+
+
+## ACTG
+
+
+```{r actg-posterior-type-wb, fig.width=7, fig.asp=0.5}
+
+pbc_vars <- data %>% filter(experiment == 'actg') %>% select(var) %>% unique(.)
+
+for(var_idx in unique(pbc_vars$var)){
+  p1 <- plot_density(data, 'actg', 'pm_wb', var_idx)
+  plot(p1)
+  
+  p <- plot_density_2(data, 'actg', 'pm_wb', var_idx)
+  plot(p)
+}
+
+
+```

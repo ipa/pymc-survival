@@ -1,12 +1,8 @@
-# import warnings
-# warnings.simplefilter("ignore")
 import logging
-
 import lifelines
 import pandas as pd
 import scipy.stats as st
 import numpy as np
-from numpy.random import default_rng
 import pymc as pm
 from pmsurv.exc import PyMCModelsError
 from pmsurv.models.base import BayesianModel
@@ -16,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class ExponentialModel(BayesianModel):
-    def __init__(self):
+    def __init__(self, priors_sd=1.0):
         super(ExponentialModel, self).__init__()
         self.column_names = None
         self.max_time = None
@@ -24,14 +20,14 @@ class ExponentialModel(BayesianModel):
         self.fit_args = None
         self.num_training_samples = None
         self.num_pred = None
+        self.priors_sd = priors_sd
 
-    @staticmethod
-    def _get_default_priors():
+    def _get_priors(self):
         return {
-            'lambda_mu': 1,
-            'lambda_sd': 1,
-            'lambda_coefs_mu': 0,
-            'lambda_coefs_sd': 1
+            'lambda_mu': 1.0,
+            'lambda_sd': self.priors_sd,
+            'lambda_coefs_mu': 0.0,
+            'lambda_coefs_sd': self.priors_sd
         }
 
     def __str__(self):
@@ -45,7 +41,7 @@ class ExponentialModel(BayesianModel):
         if self.priors is None:
             self.priors = priors
         if self.priors is None:
-            self.priors = ExponentialModel._get_default_priors()
+            self.priors = self._get_priors()
 
         model = pm.Model()
         with model:
@@ -54,37 +50,39 @@ class ExponentialModel(BayesianModel):
 
             model_input = pm.MutableData("model_input", X)
             if y is not None:
-                time_censor_ = pm.MutableData("time_censor", y[y[:, 1] == 1, 0])
-                time_uncensor_ = pm.MutableData("time_uncensor", y[y[:, 1] == 0, 0])
+                time_censor_ = pm.MutableData("time_censor", y[y[:, 1] == 1, 0]).astype('float32')
+                time_uncensor_ = pm.MutableData("time_uncensor", y[y[:, 1] == 0, 0]).astype('float32')
                 censor_ = pm.MutableData("censor", y[:, 1].astype(np.int8))
 
         with model:
             logger.info("Priors: {}".format(str(self.priors)))
 
             lambda_intercept = pm.Normal("lambda_intercept",
-                                         mu=self.priors['lambda_mu'] if f'lambda_intercept_mu' not in self.priors else self.priors[f'lambda_intercept_mu'],
-                                         sigma=self.priors['lambda_sd'] if f'lambda_intercept_sd' not in self.priors else self.priors[f'lambda_intercept_sd'])
+                                         mu=self.priors['lambda_mu'] if 'lambda_intercept_mu' not in self.priors else self.priors['lambda_intercept_mu'],
+                                         sigma=self.priors['lambda_sd'] if 'lambda_intercept_sd' not in self.priors else self.priors['lambda_intercept_sd']).astype('float32')
 
             lambda_coefs = []
             for i, cn in enumerate(self.column_names):
                 feature_name = f'lambda_{cn}'
                 lambda_coef = pm.Normal(feature_name,
                                         mu=self.priors['lambda_coefs_mu'] if f'{feature_name}_mu' not in self.priors else self.priors[f'{feature_name}_mu'],
-                                        sigma=self.priors['lambda_coefs_sd'] if f'{feature_name}_sd' not in self.priors else self.priors[f'{feature_name}_sd'])
+                                        sigma=self.priors['lambda_coefs_sd'] if f'{feature_name}_sd' not in self.priors else self.priors[f'{feature_name}_sd']).astype('float32')
                 lambda_coefs.append(model_input[:, i] * lambda_coef)
-            lambda_det = pm.Deterministic("lambda_det", pm.math.exp(lambda_intercept + sum(lambda_coefs)))
+            lambda_det = pm.Deterministic("lambda_det", pm.math.exp(lambda_intercept + sum(lambda_coefs))).astype('float32')
 
             if y is not None:
                 censor_ = pm.math.eq(censor_, 1)
-                y = pm.Exponential("y", pm.math.ones_like(time_uncensor_) / lambda_det[~censor_],
+                lambda_det_uncensor = lambda_det[~censor_]
+                y = pm.Exponential("y", pm.math.ones_like(time_uncensor_) / lambda_det_uncensor,
                                    observed=time_uncensor_)
 
                 def exponential_lccdf(lam, time):
                     """ Log complementary cdf of Exponential distribution. """
                     return -(lam * time)
 
-                y_cens = pm.Potential(
-                    "y_cens", exponential_lccdf(pm.math.ones_like(time_censor_) / lambda_det[censor_], time_censor_)
+                lambda_det_censor = lambda_det[censor_]
+                y_cens = pm.Potential(  # noqa:F841
+                    "y_cens", exponential_lccdf(pm.math.ones_like(time_censor_) / lambda_det_censor, time_censor_)
                 )
 
         return model
@@ -116,7 +114,7 @@ class ExponentialModel(BayesianModel):
                 'time_uncensor': y[y[:, 1] == 0, 0],
                 'censor': y[:, 1].astype(np.int32)
             })
-        
+
         self._inference(inference_args)
 
         return self
@@ -183,5 +181,4 @@ class ExponentialModel(BayesianModel):
         self.num_training_samples = params['num_training_samples']
         self.column_names = params['column_names']
         self.priors = params['priors']
-        # self.inference_args = params['inference_args']
         self.max_time = params['max_observed_time']

@@ -33,14 +33,14 @@ def main():
         data = joblib.load(os.path.join(run_path, 'data.pkl'))
         X_train, X_test, y_train, y_test = data
     
-        if 'pm' in experiment_name:
+        if 'exp' in experiment_name or 'wb' in experiment_name:
             selector = joblib.load(os.path.join(run_path, 'selector.pkl'))
-            if '_exp_' in experiment_name:
+            if 'exp_' in experiment_name:
                 model = ExponentialModel()
-            elif '_wb_' in experiment_name:
-                model = WeibullModelLinear()
-            elif '_nnwb_' in experiment_name:
-                model = WeibullModelNN()
+            elif 'nnwb_' in experiment_name:
+                model = WeibullModelNN(k_constant=True)
+            elif 'wb_' in experiment_name:
+                model = WeibullModelLinear(k_constant=True)
         
             model.load(os.path.join(run_path, 'model.yaml'))
         
@@ -52,7 +52,7 @@ def main():
         
             cindex_train = model.score(X_train, y_train)
             cindex_test = model.score(X_test, y_test)
-    
+        
         cindex_diff = cindex_train - cindex_test
     
         results_new = pd.concat([results_new, pd.DataFrame({

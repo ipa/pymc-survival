@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pmsurv"
-version = "0.2"
+version = "0.3"
 authors = [
   { name="Iwan Paolucci", email="592707+ipa@users.noreply.github.com" },
 ]
@@ -15,13 +15,11 @@ requires-python = ">=3.8"
 dependencies = ['arviz >= 0.12.0', 
                 'numpy < 1.24',
                 'pandas >= 1.0.0',
-                'pymc >= 5.0',
+                'pymc >= 5.1.2',
                 'scipy >= 1.7',
                 'scikit-learn >= 1.0.0',
                 'lifelines >= 0.27.0',
-                'pyyaml >= 6.0',
-                'blackjax',
-                'numpyro']
+                'pyyaml >= 6.0']
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",

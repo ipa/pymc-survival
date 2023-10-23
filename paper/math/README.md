@@ -1,0 +1,1 @@
+docker run -it --rm --mount type=bind,source=[src]\paper\math,target=/home/jovyan/math -p 8888:8888 jupyter/scipy-notebook:python-3.11 /bin/bash

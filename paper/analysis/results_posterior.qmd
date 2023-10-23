@@ -1,7 +1,7 @@
 ---
 title: "Bayesian parametric models for survival prediction in medical applications"
 subtitle: "Visualization posterior distributions"
-date: "12-02-2022"
+date: "07-03-2023"
 author:
   - name: Iwan Paolucci, PhD
     affiliation: "MD Anderson Cancer Center, Department of Interventional Radiology, Houston, TX, USA"
@@ -28,25 +28,25 @@ knitr::opts_chunk$set(dev.args = list(png = list(type = "cairo")),
 # Load data
 
 ```{r}
-redownload <- FALSE
+redownload <- TRUE
 
 if (redownload){
-  src_folder <- 'U:/src/pymc-survival/examples/experiments/results_retrain'
+  src_folder <- 'U:/src/pymc-survival/paper/experiments/results_retrain'
   file <- "posterior_5.csv"
   
   data.exp <- rbind(
-    read.csv(paste(src_folder, 'pm_exp_gbcs', file, sep = '/')) %>% mutate(experiment = 'gbcs'),
-    read.csv(paste(src_folder, 'pm_exp_whas', file, sep = '/')) %>% mutate(experiment = 'whas'),
-    read.csv(paste(src_folder, 'pm_exp_pbc', file, sep = '/')) %>% mutate(experiment = 'pbc'),
-    read.csv(paste(src_folder, 'pm_exp_aids', file, sep = '/')) %>% mutate(experiment = 'actg')
+    read.csv(paste(src_folder, 'exp_gbcs', file, sep = '/')) %>% mutate(experiment = 'gbcs'),
+    read.csv(paste(src_folder, 'exp_whas', file, sep = '/')) %>% mutate(experiment = 'whas'),
+    read.csv(paste(src_folder, 'exp_pbc', file, sep = '/')) %>% mutate(experiment = 'pbc'),
+    read.csv(paste(src_folder, 'exp_aids', file, sep = '/')) %>% mutate(experiment = 'actg')
   )
   
   
   data.wb <- rbind(
-    read.csv(paste(src_folder, 'pm_wb_gbcs', file, sep = '/')) %>% mutate(experiment = 'gbcs', model = 'pm_wb'),
-    read.csv(paste(src_folder, 'pm_wb_whas', file, sep = '/')) %>% mutate(experiment = 'whas', model = 'pm_wb'),
-    read.csv(paste(src_folder, 'pm_wb_pbc', file, sep = '/')) %>% mutate(experiment = 'pbc', model = 'pm_wb'),
-    read.csv(paste(src_folder, 'pm_wb_aids', file, sep = '/')) %>% mutate(experiment = 'actg', model = 'pm_wb')
+    read.csv(paste(src_folder, 'wb_gbcs', file, sep = '/')) %>% mutate(experiment = 'gbcs', model = 'pm_wb'),
+    read.csv(paste(src_folder, 'wb_whas', file, sep = '/')) %>% mutate(experiment = 'whas', model = 'pm_wb'),
+    read.csv(paste(src_folder, 'wb_pbc', file, sep = '/')) %>% mutate(experiment = 'pbc', model = 'pm_wb'),
+    read.csv(paste(src_folder, 'wb_aids', file, sep = '/')) %>% mutate(experiment = 'actg', model = 'pm_wb')
   )
   
   data <- rbind(data.exp, data.wb)
