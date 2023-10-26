@@ -46,9 +46,7 @@ An official documentation is work in progress. See example notebooks for referen
 
 If you use PyMC Survival please cite: 
 
-```
-
-```
+Paolucci, I., Lin, YM., Albuquerque Marques Silva, J. et al. Bayesian parametric models for survival prediction in medical applications. BMC Med Res Methodol 23, 250 (2023). https://doi.org/10.1186/s12874-023-02059-4
 
 ## Contributions
 
